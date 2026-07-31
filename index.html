@@ -106,6 +106,14 @@ ul.det{font-size:12px;color:var(--ink);padding-left:18px}ul.det li{margin:4px 0}
 .vn-desc{font-size:10px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .howto{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13px}
 .howto p{margin:6px 0}.howto b{color:var(--ink)}
+.about{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:14px;
+font-size:12px;line-height:1.7;color:var(--sub);word-break:break-word}
+.about h3{font-size:12.5px;color:var(--ink);margin:12px 0 4px}
+.about h3:first-child{margin-top:0}
+.about ul,.about ol{padding-left:18px;margin:2px 0}
+.about li{margin:2px 0}
+.about li b{color:#4e5969;font-weight:600}
+.about .disclaim{font-size:11px;color:#c9cdd4;margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
 .foot{color:var(--sub);font-size:11px;margin-top:14px}
 </style></head><body><div class="wrap">
 <h1>橡胶全球产区天气监测看板 v3 <span style="font-size:12px;color:var(--warn)">（样式预览版）</span></h1>
@@ -451,6 +459,33 @@ ul.det{font-size:12px;color:var(--ink);padding-left:18px}ul.det li{margin:4px 0}
 <p><b>8. 方向：</b>与上一个 30 天窗口用同一套方法重算比较，变化超过 5 分记上升/下降，否则持平。</p>
 <p class="sub">所有阈值与权重集中在 impact_config.json，标注"待校准"的参数为保守初值，将在阶段 3 用历史产量数据校准。</p>
 </details>
+
+<div class="about">
+  <h3>数据来源</h3>
+  <ul>
+    <li>气象数据：<b>Open-Meteo 开源气象 API</b>
+      <ul>
+        <li>历史实况：ERA5 再分析数据（欧洲中期天气预报中心 ECMWF），日值 2001 年起、逐小时 2015 年起；归档约有 5 天延迟</li>
+        <li>近端缺口与预报：Open-Meteo Forecast API（ECMWF IFS / GFS 等混合模式），近 40 天回填 + 未来 16 天预报</li>
+      </ul>
+    </li>
+    <li>监测要素：日最高/最低气温、降水、根区土壤湿度、VPD 空气干燥度（由温湿度导出）、清晨降雨（03–09 时）</li>
+    <li>监测点：36 个气象点 / 10 个产区（泰国、印尼、越南、科特迪瓦、中国云南、马来西亚、中国海南、柬埔寨、缅甸、老挝），覆盖全球天然橡胶产量约 78%</li>
+    <li>产量权重：基于 ANRPC 及公开资料的各产区产量占比估计（近似值，随年度产量变化，定期校准）</li>
+    <li>更新频率：每日 08:27（北京时间）自动更新；数据窗口为滚动 30 天</li>
+  </ul>
+  <h3>计算逻辑（简版）</h3>
+  <ol>
+    <li><b>先判后权</b>：每个监测点用自身历史同期气候基准计算距平，按偏离程度分 0–3 级（0.5σ / 1σ / 2σ），在点级完成影响判定后再按产量权重汇总</li>
+    <li><b>双层评估</b>：割胶层（当期供应）= 清晨雨日 ×0.7 + 降水量 ×0.3，乘以割季门控系数；树况层（潜在产能）= 土壤湿度 ×0.30 + 夜温 ×0.25 + VPD ×0.20 + 高温 ×0.15 + 雨量 ×0.10</li>
+    <li><b>非线性处理</b>：连续清晨雨天数、土壤亏缺累积日、热积累等累积特征达到阈值会提升胁迫级别；VPD 与土壤湿度同时重度异常时叠加交互加成</li>
+    <li><b>供应天气胁迫指数（0–100）</b> = 割胶分 ×0.4 + 树况分 ×0.6；受胁占比 = 胁迫分 ≥25 的监测点的产量权重占比</li>
+    <li><b>格局标签</b>：指数（深度）× 受胁占比（广度）四象限 → 点状冲击 / 面状承压 / 广泛受损 / 基本正常</li>
+    <li><b>层级</b>：L0 平稳 / L1 扰动（日级可恢复）/ L2 损失（月级缺口）/ L3 损伤（跨季产能风险），由累积量自动升级</li>
+    <li><b>方向</b>：与上一 30 天窗口比较的指数变化（±5 以内为持平）</li>
+  </ol>
+  <div class="disclaim">本页为天气监测研究工具，指数为统计模型结果，参数基于领域先验、尚未做产量回归校准；仅供参考研究，不构成任何投资建议。</div>
+</div>
 
 <div class="foot">措辞约定：产量影响一律使用中性供需语言，不用多空类交易词汇。当期影响=减产压力(当期)，潜在影响=减产压力(潜在)，有利方向=利于产量，无显著偏离=基本无害；指数高位=供应偏紧、低位=偏松。红=较常年偏多/偏高，蓝=偏少/偏低，绿=正常（|距平|&gt;0.5σ）。全球占比/点权重均为 ANRPC 口径占位先验值，待分省产量校准。本页为样式预览，正式版将做成 Widget 每日自动刷新。</div>
 </div></body></html>
