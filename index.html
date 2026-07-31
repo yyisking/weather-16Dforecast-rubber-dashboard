@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>橡胶全球产区天气监测看板 v3（预览）</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1d2129;--sub:#86909c;--line:#e5e6eb;
+--ok:#00b42a;--hi:#f53f3f;--lo:#165dff;--warn:#ff7d00;--crit:#d4380d}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.6 -apple-system,"PingFang SC",sans-serif;padding:20px}
+.wrap{max-width:1120px;margin:0 auto}
+h1{font-size:20px}.meta{color:var(--sub);font-size:12px;margin:4px 0 16px}
+.sumbar{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--warn);
+border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:14px;line-height:1.7}
+.sumbar .sb-tag{font-weight:700;margin-right:6px}
+.sumbar .sb-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:8px}
+.sumbar b{font-variant-numeric:tabular-nums}
+.gbar{background:#1d2129;color:#fff;border-radius:12px;padding:18px 22px;margin-bottom:14px;
+display:flex;gap:28px;align-items:center;flex-wrap:wrap}
+.gbar .gt{font-size:12px;color:#a9aeb8}
+.gbar .gitem{text-align:center}
+.bigidx{font-size:44px;font-weight:800;line-height:1.1}
+.bigidx.ok{color:#7bdb8f}.bigidx.warn{color:#ffa940}.bigidx.crit{color:#ff7875}
+.gv{font-size:24px;font-weight:700}
+.gv.ok{color:#7bdb8f}.gv.warn{color:#ffa940}.gv.crit{color:#ff7875}
+.gread{font-size:13px;font-weight:600;padding:3px 10px;border-radius:10px;background:#343945}
+.gnote{font-size:11px;color:#787d88;max-width:300px}
+.mkt{margin-left:auto;background:#2a2f3a;border:1px dashed #4e5969;border-radius:10px;
+padding:12px 16px;min-width:220px;color:#787d88;font-size:12px}
+.mkt b{color:#a9aeb8;font-size:13px}
+.dir.up{color:#ff7875;font-weight:600}.dir.down{color:#7bdb8f;font-weight:600}.dir.flat{color:#a9aeb8}
+/* 胁迫指数图例：绿→黄→红色条 + 当前位置标记 */
+.scale{width:180px;margin-top:6px}
+.scale-bar{position:relative;height:8px;border-radius:4px;
+background:linear-gradient(90deg,#00b42a,#f7ba1e 45%,#ff7d00 72%,#d4380d)}
+.scale-mark{position:absolute;top:-4px;width:3px;height:16px;background:#fff;border-radius:1px;
+box-shadow:0 0 2px rgba(0,0,0,.6);transform:translateX(-50%)}
+.scale-lbl{display:flex;justify-content:space-between;font-size:10px;color:#a9aeb8;margin-top:3px}
+/* 层级图例：L0→L3 绿→红分段，当前层级高亮 */
+.lvleg{display:flex;gap:3px;margin-top:5px;justify-content:center}
+.lvleg .seg{font-size:10px;padding:1px 6px;border-radius:7px;color:#fff;opacity:.3;white-space:nowrap}
+.lvleg .seg.l0{background:#00b42a}.lvleg .seg.l1{background:#f7ba1e}
+.lvleg .seg.l2{background:#ff7d00}.lvleg .seg.l3{background:#d4380d}
+.lvleg .seg.on{opacity:1;font-weight:700;box-shadow:0 0 0 1px #fff}
+/* 产区卡片紧凑版 */
+.idxbox{display:flex;flex-direction:column;align-items:center}
+.card .scale{width:104px;margin-top:4px}
+.card .scale-bar{height:6px}
+.card .scale-mark{height:12px;top:-3px;background:#1d2129;box-shadow:none}
+.card .scale-lbl{font-size:9px;color:#c9cdd4;margin-top:2px}
+.card .lvleg .seg{opacity:.25}
+.card .lvleg .seg.on{opacity:1;box-shadow:0 0 0 1px #1d2129}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px}
+h2{font-size:17px}.sub{color:var(--sub);font-size:12px}
+.share{font-size:12px;font-weight:500;color:#fff;background:#4e5969;border-radius:8px;padding:2px 8px;vertical-align:2px}
+.hd-right{display:flex;gap:10px;align-items:center}
+.idx{font-size:30px;font-weight:800;line-height:1}
+.idx-u{font-size:11px;font-weight:400;color:var(--sub);margin-left:3px}
+.idx.ok{color:var(--ok)}.idx.warn{color:var(--warn)}.idx.crit{color:var(--crit)}
+.badges{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.badge{font-size:11px;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.badge.ok{background:#e8ffea;color:var(--ok)}.badge.warn{background:#fff7e8;color:var(--warn)}
+.badge.warn2{background:#ffece8;color:#e8590c;font-weight:600}
+.badge.crit{background:#fff1f0;color:var(--crit);font-weight:600}
+.lv{font-size:11px;padding:2px 8px;border-radius:10px;white-space:nowrap;font-weight:600}
+.lv0{background:#f2f3f5;color:#4e5969}.lv1{background:#e8f3ff;color:var(--lo)}
+.lv2{background:#fff7e8;color:var(--warn)}.lv3{background:#fff1f0;color:var(--crit)}
+.shrow{display:flex;gap:18px;margin:6px 0 4px;flex-wrap:wrap}
+.sh{display:flex;align-items:center;gap:6px;font-size:12px;flex:1;min-width:200px}
+.sh-k{color:var(--sub);white-space:nowrap}
+.sh-bar{flex:1;height:8px;background:#f2f3f5;border-radius:4px;overflow:hidden}
+.sh-bar i{display:block;height:100%}
+.sh-bar i.ok{background:var(--ok)}.sh-bar i.warn{background:var(--warn)}.sh-bar i.crit{background:var(--crit)}
+.sh-v{font-weight:700;font-variant-numeric:tabular-nums}
+.sh-v.ok{color:var(--ok)}.sh-v.warn{color:var(--warn)}.sh-v.crit{color:var(--crit)}
+.grp{font-size:12px;color:var(--sub);margin:12px 0 4px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--sub);font-weight:500;font-size:12px}
+td,th{padding:4px 6px;border-bottom:1px solid var(--line)}
+td.v{font-variant-numeric:tabular-nums;font-weight:600}
+td.a{color:var(--sub);font-variant-numeric:tabular-nums}
+.pill{font-size:11px;padding:1px 7px;border-radius:9px;white-space:nowrap}
+.pill.ok{background:#e8ffea;color:var(--ok)}.pill.hi{background:#ffece8;color:var(--hi)}.pill.lo{background:#e8f3ff;color:var(--lo)}
+.imp{font-size:11px;padding:1px 7px;border-radius:9px;white-space:nowrap;cursor:help}
+.imp.bad{background:#ffece8;color:var(--hi);font-weight:600}
+.imp.good{background:#e8ffea;color:var(--ok)}
+.imp.neutral{color:#c9cdd4}
+.fcrow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.fc{background:var(--bg);border-radius:8px;padding:8px;text-align:center}
+.fc-k{font-size:11px;color:var(--sub)}.fc-v{font-size:15px;font-weight:700;margin:2px 0}
+.fc-b{font-size:11px;color:var(--sub)}
+details{margin-top:6px}summary{cursor:pointer;color:var(--lo);font-size:13px;font-weight:600}
+ul.det{font-size:12px;color:var(--ink);padding-left:18px}ul.det li{margin:4px 0}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#c9cdd4;margin-right:5px}
+.dot.bad{background:var(--hi)}
+.vzone{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin-top:14px}
+.vz-title{font-size:12px;font-weight:600;color:var(--sub)}
+.vrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+@media(max-width:820px){.vrow{grid-template-columns:1fr}}
+.vnode{border:1px dashed var(--line);border-radius:8px;padding:7px 10px;text-align:center}
+.vn-k{font-size:12px;font-weight:600}
+.vn-d{font-size:14px;font-weight:700;margin:1px 0;font-variant-numeric:tabular-nums}
+.vn-d em{font-style:normal;font-size:11px;color:var(--warn);font-weight:600;margin-left:4px}
+.vn-desc{font-size:10px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.howto{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13px}
+.howto p{margin:6px 0}.howto b{color:var(--ink)}
+.foot{color:var(--sub);font-size:11px;margin-top:14px}
+</style></head><body><div class="wrap">
+<h1>橡胶全球产区天气监测看板 v3 <span style="font-size:12px;color:var(--warn)">（样式预览版）</span></h1>
+<div class="meta">数据窗口：2026-07-01 ~ 2026-07-30 ｜ 方向对比：上一 30 天窗口（2026-06-01 ~ 2026-06-30）｜ 距平基准：各点自身历史同期 ｜ 生成：2026-07-31T12:23:06</div>
+
+<div class="sumbar"><span class="sb-dot"></span><span class="sb-tag">当日摘要：</span>7/1–7/30｜全球胁迫指数 <b>38.1</b>（+7.7，上升）｜局部承压 · L3 损伤｜异动产区：越南 73.2（+35.8，广泛受损）、中国海南 12.2（-26.0，基本正常）</div>
+
+<div class="gbar">
+  <div class="gitem"><div class="gt">全球供应天气胁迫指数</div><div class="bigidx ok">38.1</div>
+  <div class="scale"><div class="scale-bar"><i class="scale-mark" style="left:38.1%"></i></div><div class="scale-lbl"><span>0 无胁迫</span><span>100 极度受胁迫</span></div></div>
+  <div class="gt" style="margin-top:4px">较上期 +7.7</div></div>
+  <div class="gitem"><div class="gt">割胶受胁占比(当期)</div><div class="gv ok">28%</div></div>
+  <div class="gitem"><div class="gt">树况受胁占比(潜在)</div><div class="gv crit">66%</div></div>
+  <div class="gitem"><div class="gt">格局</div><div class="gread">局部承压</div>
+  <div class="gt" style="margin-top:4px">L3 损伤 ｜ <span class="dir up">↑ 上升</span></div>
+  <div class="lvleg"><span class="seg l0" title="L0 平稳">L0 平稳</span><span class="seg l1" title="L1 轻度扰动">L1 轻度扰动</span><span class="seg l2" title="L2 中度损失">L2 中度损失</span><span class="seg l3 on" title="L3 重度损伤">L3 重度损伤</span></div></div>
+  <div class="gnote">解读：局部扰动，整体偏松。占比 = 受胁点的产量权重份额（占已监测 ≈78% 全球产量，未监测：印度≈6%(净进口国)、斯里兰卡/菲律宾/非洲其他/拉美≈13%）。</div>
+  <div class="mkt"><b>市场状态（占位）</b><br>价格 / 库存数据接入中——待 Wind 数据源。<br>此处将展示：期现价格、价差、库存与市场预期的对照。</div>
+</div>
+
+<div class="grid">
+    <section class="card">
+      <header>
+        <div><h2>泰国 <span class="share">全球占比 ≈33.0%</span></h2>
+        <span class="sub">7 个监测点 · 产量加权 · 割季系数 1.0</span></div>
+        <div class="hd-right">
+          <div class="idxbox">
+            <div class="idx ok">33.4<span class="idx-u">指数</span></div>
+            <div class="scale"><div class="scale-bar"><i class="scale-mark" style="left:33.4%"></i></div><div class="scale-lbl"><span>0</span><span>100</span></div></div>
+          </div>
+          <div class="badges"><span class="badge warn">局部承压</span><span class="lv lv3">L3 损伤</span><div class="lvleg"><span class="seg l0" title="L0 平稳">L0</span><span class="seg l1" title="L1 轻度扰动">L1</span><span class="seg l2" title="L2 中度损失">L2</span><span class="seg l3 on" title="L3 重度损伤">L3</span></div><span class="dir up">↑ 上升</span></div>
+        </div>
+      </header>
+      <div class="shrow">
+        <div class="sh"><span class="sh-k">割胶受胁</span><span class="sh-bar"><i class="ok" style="width:10.0%"></i></span><span class="sh-v ok">10%</span></div>
+        <div class="sh"><span class="sh-k">树况受胁</span><span class="sh-bar"><i class="crit" style="width:77.0%"></i></span><span class="sh-v crit">77%</span></div>
+      </div>
+      <details><summary>明细：指标距平 · 点级得分 · 16 天预报</summary>
+        <div class="grp">树况产能 · 慢通道（30天滚动, 割胶分×割季系数 1.0）</div>
+        <table><thead><tr><th>指标</th><th>当前值</th><th>距平</th><th>状态</th><th>对产量</th></tr></thead>
+        <tbody><tr><td>日均温</td><td class="v">28.25 °C</td><td class="a">+0.98</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="日均温偏高抑制光合与乳胶再生">减产压力(潜在)</span></td></tr><tr><td>夜温(最低温)</td><td class="v">25.11 °C</td><td class="a">+0.46</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="夜温升高减产效应最显著(夜间呼吸消耗)">减产压力(潜在)</span></td></tr><tr><td>高温日≥35°C</td><td class="v">5.32 天</td><td class="a">+4.51</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title=">35°C诱导气孔关闭,热胁迫累积">减产压力(潜在)</span></td></tr><tr><td>VPD(空气干燥度)</td><td class="v">0.9 kPa</td><td class="a">+0.15</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="空气干燥抽水力强,蒸腾受压">减产压力(潜在)</span></td></tr><tr><td>根区土壤湿度</td><td class="v">0.29 m³/m³</td><td class="a">-0.0</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>30天降雨</td><td class="v">151.17 mm</td><td class="a">-10.57</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>中雨天数≥10mm</td><td class="v">4.91 天</td><td class="a">-0.36</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr></tbody></table>
+        <div class="grp">割胶作业 · 快通道（30天滚动）</div>
+        <table><tbody><tr><td>清晨降雨日(03-09)</td><td class="v">7.49 天</td><td class="a">-0.06</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>清晨雨量</td><td class="v">27.79 mm</td><td class="a">+4.27</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr></tbody></table>
+        <div class="grp">点级得分（受胁线 ≥25）</div>
+        <table><thead><tr><th>监测点</th><th>割胶分</th><th>树况分</th><th>状态</th></tr></thead>
+        <tbody><tr><td>宋卡</td><td class="v">10.0</td><td class="v">82.5</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>董里</td><td class="v">23.3</td><td class="v">45.1</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>那空是贪玛叻</td><td class="v">0.0</td><td class="v">35.0</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>素叻他尼</td><td class="v">0.0</td><td class="v">8.3</td><td><span class="dot"></span>正常</td></tr><tr><td>甲米</td><td class="v">23.3</td><td class="v">51.8</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>乌隆他尼</td><td class="v">56.7</td><td class="v">0.0</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>清莱</td><td class="v">66.7</td><td class="v">0.0</td><td><span class="dot bad"></span>受胁</td></tr></tbody></table>
+        <div class='grp'>受胁点触发明细</div><ul class='det'><li><b>宋卡</b> 割胶 10.0 / 树况 82.5 ⚡干热叠加<br><span class="sub">hot_days3级重、morning_rain_mm1级轻、soil_moisture3级重、tmin2级中、vpd2级中；soil_deficit_days=30(3级重)；heat_acc=7(2级中)</span></li><li><b>董里</b> 割胶 23.3 / 树况 45.1<br><span class="sub">morning_rain_days1级轻、tmin3级重、vpd2级中；morning_rain_streak=4(1级轻)</span></li><li><b>那空是贪玛叻</b> 割胶 0.0 / 树况 35.0<br><span class="sub">hot_days3级重、rain1级轻、tmin2级中；heat_acc=5(1级轻)</span></li><li><b>甲米</b> 割胶 23.3 / 树况 51.8 ⚡干热叠加<br><span class="sub">morning_rain_days1级轻、rain2级中、soil_moisture2级中、vpd2级中；morning_rain_streak=3(1级轻)；soil_deficit_days=14(2级中)</span></li><li><b>乌隆他尼</b> 割胶 56.7 / 树况 0.0<br><span class="sub">morning_rain_days2级中、morning_rain_mm1级轻；morning_rain_streak=6(2级中)</span></li><li><b>清莱</b> 割胶 66.7 / 树况 0.0<br><span class="sub">morning_rain_days2级中、morning_rain_mm2级中；morning_rain_streak=6(2级中)</span></li></ul>
+        <div class="grp">未来 16 天预报 vs 常年（2026-07-31 ~ 2026-08-15）</div>
+        <div class="fcrow"><div class="fc"><div class="fc-k">清晨降雨日</div><div class="fc-v">7.01天</div><div class="fc-b">常年 4.17 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">累计雨量</div><div class="fc-v">123.3mm</div><div class="fc-b">常年 84.67 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">高温日</div><div class="fc-v">0.0天</div><div class="fc-b">常年 0.44 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">平均气温</div><div class="fc-v">27.23°C</div><div class="fc-b">常年 27.27 <span class="pill ok">正常</span></div></div></div>
+      </details>
+    </section>
+    <section class="card">
+      <header>
+        <div><h2>印尼 <span class="share">全球占比 ≈15.0%</span></h2>
+        <span class="sub">7 个监测点 · 产量加权 · 割季系数 0.8</span></div>
+        <div class="hd-right">
+          <div class="idxbox">
+            <div class="idx warn">52.8<span class="idx-u">指数</span></div>
+            <div class="scale"><div class="scale-bar"><i class="scale-mark" style="left:52.8%"></i></div><div class="scale-lbl"><span>0</span><span>100</span></div></div>
+          </div>
+          <div class="badges"><span class="badge warn2">面状承压</span><span class="lv lv3">L3 损伤</span><div class="lvleg"><span class="seg l0" title="L0 平稳">L0</span><span class="seg l1" title="L1 轻度扰动">L1</span><span class="seg l2" title="L2 中度损失">L2</span><span class="seg l3 on" title="L3 重度损伤">L3</span></div><span class="dir up">↑ 上升</span></div>
+        </div>
+      </header>
+      <div class="shrow">
+        <div class="sh"><span class="sh-k">割胶受胁</span><span class="sh-bar"><i class="ok" style="width:27.0%"></i></span><span class="sh-v ok">27%</span></div>
+        <div class="sh"><span class="sh-k">树况受胁</span><span class="sh-bar"><i class="crit" style="width:100%"></i></span><span class="sh-v crit">100%</span></div>
+      </div>
+      <details><summary>明细：指标距平 · 点级得分 · 16 天预报</summary>
+        <div class="grp">树况产能 · 慢通道（30天滚动, 割胶分×割季系数 0.8）</div>
+        <table><thead><tr><th>指标</th><th>当前值</th><th>距平</th><th>状态</th><th>对产量</th></tr></thead>
+        <tbody><tr><td>日均温</td><td class="v">27.83 °C</td><td class="a">+1.59</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="日均温偏高抑制光合与乳胶再生">减产压力(潜在)</span></td></tr><tr><td>夜温(最低温)</td><td class="v">24.53 °C</td><td class="a">+1.06</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="夜温升高减产效应最显著(夜间呼吸消耗)">减产压力(潜在)</span></td></tr><tr><td>高温日≥35°C</td><td class="v">0.13 天</td><td class="a">+0.07</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>VPD(空气干燥度)</td><td class="v">0.94 kPa</td><td class="a">+0.38</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="空气干燥抽水力强,蒸腾受压">减产压力(潜在)</span></td></tr><tr><td>根区土壤湿度</td><td class="v">0.26 m³/m³</td><td class="a">-0.08</td><td><span class="pill lo">偏少</span></td><td><span class="imp bad" title="根区缺水→排胶少,重死皮风险">减产压力(潜在)</span></td></tr><tr><td>30天降雨</td><td class="v">93.52 mm</td><td class="a">-48.4</td><td><span class="pill lo">偏少</span></td><td><span class="imp bad" title="水分亏缺数周后传导到产量(对树体)">减产压力(潜在)</span></td></tr><tr><td>中雨天数≥10mm</td><td class="v">2.73 天</td><td class="a">-2.03</td><td><span class="pill lo">偏少</span></td><td><span class="imp good" title="中雨天多压缩割胶窗口+病害风险">利于产量</span></td></tr></tbody></table>
+        <div class="grp">割胶作业 · 快通道（30天滚动）</div>
+        <table><tbody><tr><td>清晨降雨日(03-09)</td><td class="v">4.13 天</td><td class="a">-1.75</td><td><span class="pill lo">偏少</span></td><td><span class="imp good" title="清晨雨=损失割胶日,当月即体现">利于产量</span></td></tr><tr><td>清晨雨量</td><td class="v">14.49 mm</td><td class="a">-3.49</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr></tbody></table>
+        <div class="grp">点级得分（受胁线 ≥25）</div>
+        <table><thead><tr><th>监测点</th><th>割胶分</th><th>树况分</th><th>状态</th></tr></thead>
+        <tbody><tr><td>巨港</td><td class="v">0.0</td><td class="v">100.0</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>北干巴鲁</td><td class="v">45.3</td><td class="v">55.0</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>占碑</td><td class="v">0.0</td><td class="v">45.1</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>楠榜</td><td class="v">0.0</td><td class="v">100.0</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>棉兰</td><td class="v">34.7</td><td class="v">61.7</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>坤甸</td><td class="v">0.0</td><td class="v">93.5</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>马辰</td><td class="v">0.0</td><td class="v">100.0</td><td><span class="dot bad"></span>受胁</td></tr></tbody></table>
+        <div class='grp'>受胁点触发明细</div><ul class='det'><li><b>巨港</b> 割胶 0.0 / 树况 100.0 ⚡干热叠加<br><span class="sub">rain2级中、soil_moisture3级重、tmin3级重、vpd3级重；soil_deficit_days=30(3级重)</span></li><li><b>北干巴鲁</b> 割胶 45.3 / 树况 55.0<br><span class="sub">morning_rain_days2级中、morning_rain_mm1级轻、soil_moisture3级重、tmin3级重；soil_deficit_days=30(3级重)</span></li><li><b>占碑</b> 割胶 0.0 / 树况 45.1<br><span class="sub">rain2级中、tmin3级重、vpd1级轻</span></li><li><b>楠榜</b> 割胶 0.0 / 树况 100.0 ⚡干热叠加<br><span class="sub">rain2级中、soil_moisture3级重、tmin3级重、vpd3级重；soil_deficit_days=30(3级重)</span></li><li><b>棉兰</b> 割胶 34.7 / 树况 61.7<br><span class="sub">morning_rain_days1级轻、morning_rain_mm2级中、soil_moisture3级重、tmin3级重、vpd1级轻；soil_deficit_days=30(3级重)</span></li><li><b>坤甸</b> 割胶 0.0 / 树况 93.5 ⚡干热叠加<br><span class="sub">hot_days3级重、rain1级轻、soil_moisture3级重、tmin2级中、vpd3级重；soil_deficit_days=22(3级重)</span></li><li><b>马辰</b> 割胶 0.0 / 树况 100.0 ⚡干热叠加<br><span class="sub">rain2级中、soil_moisture3级重、tmin3级重、vpd3级重；soil_deficit_days=30(3级重)</span></li></ul>
+        <div class="grp">未来 16 天预报 vs 常年（2026-07-31 ~ 2026-08-15）</div>
+        <div class="fcrow"><div class="fc"><div class="fc-k">清晨降雨日</div><div class="fc-v">1.06天</div><div class="fc-b">常年 2.82 <span class="pill lo">偏少</span></div></div><div class="fc"><div class="fc-k">累计雨量</div><div class="fc-v">32.02mm</div><div class="fc-b">常年 60.01 <span class="pill lo">偏少</span></div></div><div class="fc"><div class="fc-k">高温日</div><div class="fc-v">0.86天</div><div class="fc-b">常年 0.01 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">平均气温</div><div class="fc-v">27.5°C</div><div class="fc-b">常年 26.47 <span class="pill hi">偏高</span></div></div></div>
+      </details>
+    </section>
+    <section class="card">
+      <header>
+        <div><h2>科特迪瓦 <span class="share">全球占比 ≈9.0%</span></h2>
+        <span class="sub">2 个监测点 · 产量加权 · 割季系数 1.0</span></div>
+        <div class="hd-right">
+          <div class="idxbox">
+            <div class="idx ok">8.8<span class="idx-u">指数</span></div>
+            <div class="scale"><div class="scale-bar"><i class="scale-mark" style="left:8.8%"></i></div><div class="scale-lbl"><span>0</span><span>100</span></div></div>
+          </div>
+          <div class="badges"><span class="badge ok">基本正常</span><span class="lv lv0">L0 平稳</span><div class="lvleg"><span class="seg l0 on" title="L0 平稳">L0</span><span class="seg l1" title="L1 轻度扰动">L1</span><span class="seg l2" title="L2 中度损失">L2</span><span class="seg l3" title="L3 重度损伤">L3</span></div><span class="dir flat">→ 持平</span></div>
+        </div>
+      </header>
+      <div class="shrow">
+        <div class="sh"><span class="sh-k">割胶受胁</span><span class="sh-bar"><i class="ok" style="width:0.0%"></i></span><span class="sh-v ok">0%</span></div>
+        <div class="sh"><span class="sh-k">树况受胁</span><span class="sh-bar"><i class="ok" style="width:0.0%"></i></span><span class="sh-v ok">0%</span></div>
+      </div>
+      <details><summary>明细：指标距平 · 点级得分 · 16 天预报</summary>
+        <div class="grp">树况产能 · 慢通道（30天滚动, 割胶分×割季系数 1.0）</div>
+        <table><thead><tr><th>指标</th><th>当前值</th><th>距平</th><th>状态</th><th>对产量</th></tr></thead>
+        <tbody><tr><td>日均温</td><td class="v">24.97 °C</td><td class="a">+0.44</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="日均温偏高抑制光合与乳胶再生">减产压力(潜在)</span></td></tr><tr><td>夜温(最低温)</td><td class="v">22.46 °C</td><td class="a">+0.39</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="夜温升高减产效应最显著(夜间呼吸消耗)">减产压力(潜在)</span></td></tr><tr><td>高温日≥35°C</td><td class="v">0.0 天</td><td class="a">0.0</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>VPD(空气干燥度)</td><td class="v">0.51 kPa</td><td class="a">-0.06</td><td><span class="pill lo">偏低</span></td><td><span class="imp good" title="空气干燥抽水力强,蒸腾受压">利于产量</span></td></tr><tr><td>根区土壤湿度</td><td class="v">0.36 m³/m³</td><td class="a">-0.01</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>30天降雨</td><td class="v">92.5 mm</td><td class="a">-20.03</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>中雨天数≥10mm</td><td class="v">0.5 天</td><td class="a">-2.54</td><td><span class="pill lo">偏少</span></td><td><span class="imp good" title="中雨天多压缩割胶窗口+病害风险">利于产量</span></td></tr></tbody></table>
+        <div class="grp">割胶作业 · 快通道（30天滚动）</div>
+        <table><tbody><tr><td>清晨降雨日(03-09)</td><td class="v">2.5 天</td><td class="a">-3.18</td><td><span class="pill lo">偏少</span></td><td><span class="imp good" title="清晨雨=损失割胶日,当月即体现">利于产量</span></td></tr><tr><td>清晨雨量</td><td class="v">5.0 mm</td><td class="a">-8.62</td><td><span class="pill lo">偏少</span></td><td><span class="imp good" title="雨冲胶稀释杯胶,单日产出损失">利于产量</span></td></tr></tbody></table>
+        <div class="grp">点级得分（受胁线 ≥25）</div>
+        <table><thead><tr><th>监测点</th><th>割胶分</th><th>树况分</th><th>状态</th></tr></thead>
+        <tbody><tr><td>苏布雷</td><td class="v">0.0</td><td class="v">19.6</td><td><span class="dot"></span>正常</td></tr><tr><td>阿本古鲁</td><td class="v">0.0</td><td class="v">9.8</td><td><span class="dot"></span>正常</td></tr></tbody></table>
+        
+        <div class="grp">未来 16 天预报 vs 常年（2026-07-31 ~ 2026-08-15）</div>
+        <div class="fcrow"><div class="fc"><div class="fc-k">清晨降雨日</div><div class="fc-v">4.0天</div><div class="fc-b">常年 2.82 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">累计雨量</div><div class="fc-v">43.7mm</div><div class="fc-b">常年 44.69 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">高温日</div><div class="fc-v">0.0天</div><div class="fc-b">常年 0.0 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">平均气温</div><div class="fc-v">24.16°C</div><div class="fc-b">常年 24.4 <span class="pill lo">偏低</span></div></div></div>
+      </details>
+    </section>
+    <section class="card">
+      <header>
+        <div><h2>越南 <span class="share">全球占比 ≈8.0%</span></h2>
+        <span class="sub">6 个监测点 · 产量加权 · 割季系数 1.0</span></div>
+        <div class="hd-right">
+          <div class="idxbox">
+            <div class="idx crit">73.2<span class="idx-u">指数</span></div>
+            <div class="scale"><div class="scale-bar"><i class="scale-mark" style="left:73.2%"></i></div><div class="scale-lbl"><span>0</span><span>100</span></div></div>
+          </div>
+          <div class="badges"><span class="badge crit">广泛受损</span><span class="lv lv3">L3 损伤</span><div class="lvleg"><span class="seg l0" title="L0 平稳">L0</span><span class="seg l1" title="L1 轻度扰动">L1</span><span class="seg l2" title="L2 中度损失">L2</span><span class="seg l3 on" title="L3 重度损伤">L3</span></div><span class="dir up">↑ 上升</span></div>
+        </div>
+      </header>
+      <div class="shrow">
+        <div class="sh"><span class="sh-k">割胶受胁</span><span class="sh-bar"><i class="crit" style="width:92.0%"></i></span><span class="sh-v crit">92%</span></div>
+        <div class="sh"><span class="sh-k">树况受胁</span><span class="sh-bar"><i class="crit" style="width:85.0%"></i></span><span class="sh-v crit">85%</span></div>
+      </div>
+      <details><summary>明细：指标距平 · 点级得分 · 16 天预报</summary>
+        <div class="grp">树况产能 · 慢通道（30天滚动, 割胶分×割季系数 1.0）</div>
+        <table><thead><tr><th>指标</th><th>当前值</th><th>距平</th><th>状态</th><th>对产量</th></tr></thead>
+        <tbody><tr><td>日均温</td><td class="v">26.09 °C</td><td class="a">+0.48</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="日均温偏高抑制光合与乳胶再生">减产压力(潜在)</span></td></tr><tr><td>夜温(最低温)</td><td class="v">23.63 °C</td><td class="a">+0.27</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="夜温升高减产效应最显著(夜间呼吸消耗)">减产压力(潜在)</span></td></tr><tr><td>高温日≥35°C</td><td class="v">0.0 天</td><td class="a">0.0</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>VPD(空气干燥度)</td><td class="v">0.5 kPa</td><td class="a">+0.1</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="空气干燥抽水力强,蒸腾受压">减产压力(潜在)</span></td></tr><tr><td>根区土壤湿度</td><td class="v">0.46 m³/m³</td><td class="a">-0.03</td><td><span class="pill lo">偏少</span></td><td><span class="imp bad" title="根区缺水→排胶少,重死皮风险">减产压力(潜在)</span></td></tr><tr><td>30天降雨</td><td class="v">306.68 mm</td><td class="a">-29.76</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>中雨天数≥10mm</td><td class="v">11.68 天</td><td class="a">-2.06</td><td><span class="pill lo">偏少</span></td><td><span class="imp good" title="中雨天多压缩割胶窗口+病害风险">利于产量</span></td></tr></tbody></table>
+        <div class="grp">割胶作业 · 快通道（30天滚动）</div>
+        <table><tbody><tr><td>清晨降雨日(03-09)</td><td class="v">16.41 天</td><td class="a">+4.35</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title="清晨雨=损失割胶日,当月即体现">减产压力(当期)</span></td></tr><tr><td>清晨雨量</td><td class="v">57.12 mm</td><td class="a">+19.47</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title="雨冲胶稀释杯胶,单日产出损失">减产压力(当期)</span></td></tr></tbody></table>
+        <div class="grp">点级得分（受胁线 ≥25）</div>
+        <table><thead><tr><th>监测点</th><th>割胶分</th><th>树况分</th><th>状态</th></tr></thead>
+        <tbody><tr><td>平福</td><td class="v">80.0</td><td class="v">86.3</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>同奈</td><td class="v">66.7</td><td class="v">79.8</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>平阳</td><td class="v">66.7</td><td class="v">90.6</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>西宁</td><td class="v">23.3</td><td class="v">100.0</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>嘉莱</td><td class="v">80.0</td><td class="v">23.5</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>多乐</td><td class="v">76.7</td><td class="v">62.7</td><td><span class="dot bad"></span>受胁</td></tr></tbody></table>
+        <div class='grp'>受胁点触发明细</div><ul class='det'><li><b>平福</b> 割胶 80.0 / 树况 86.3 ⚡干热叠加<br><span class="sub">morning_rain_days3级重、morning_rain_mm1级轻、rain2级中、soil_moisture3级重、tmin2级中、vpd2级中；morning_rain_streak=8(3级重)</span></li><li><b>同奈</b> 割胶 66.7 / 树况 79.8 ⚡干热叠加<br><span class="sub">morning_rain_days2级中、morning_rain_mm2级中、rain1级轻、soil_moisture3级重、tmin1级轻、vpd3级重；morning_rain_streak=6(2级中)</span></li><li><b>平阳</b> 割胶 66.7 / 树况 90.6 ⚡干热叠加<br><span class="sub">morning_rain_days2级中、morning_rain_mm2级中、rain1级轻、soil_moisture3级重、tmin2级中、vpd3级重；morning_rain_streak=6(2级中)；soil_deficit_days=30(3级重)</span></li><li><b>西宁</b> 割胶 23.3 / 树况 100.0 ⚡干热叠加<br><span class="sub">morning_rain_days1级轻、rain2级中、soil_moisture3级重、tmin3级重、vpd3级重；morning_rain_streak=3(1级轻)；soil_deficit_days=30(3级重)</span></li><li><b>嘉莱</b> 割胶 80.0 / 树况 23.5<br><span class="sub">morning_rain_days3级重、morning_rain_mm1级轻、soil_moisture2级中；morning_rain_streak=19(3级重)；soil_deficit_days=12(1级轻)</span></li><li><b>多乐</b> 割胶 76.7 / 树况 62.7<br><span class="sub">morning_rain_days2级中、morning_rain_mm3级重、soil_moisture3级重、tmin2级中、vpd1级轻；morning_rain_streak=3(1级轻)；soil_deficit_days=30(3级重)</span></li></ul>
+        <div class="grp">未来 16 天预报 vs 常年（2026-07-31 ~ 2026-08-15）</div>
+        <div class="fcrow"><div class="fc"><div class="fc-k">清晨降雨日</div><div class="fc-v">8.42天</div><div class="fc-b">常年 6.47 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">累计雨量</div><div class="fc-v">220.49mm</div><div class="fc-b">常年 195.98 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">高温日</div><div class="fc-v">0.0天</div><div class="fc-b">常年 0.0 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">平均气温</div><div class="fc-v">25.38°C</div><div class="fc-b">常年 25.42 <span class="pill ok">正常</span></div></div></div>
+      </details>
+    </section>
+    <section class="card">
+      <header>
+        <div><h2>中国云南 <span class="share">全球占比 ≈3.0%</span></h2>
+        <span class="sub">3 个监测点 · 产量加权 · 割季系数 1.0</span></div>
+        <div class="hd-right">
+          <div class="idxbox">
+            <div class="idx ok">30.8<span class="idx-u">指数</span></div>
+            <div class="scale"><div class="scale-bar"><i class="scale-mark" style="left:30.8%"></i></div><div class="scale-lbl"><span>0</span><span>100</span></div></div>
+          </div>
+          <div class="badges"><span class="badge ok">基本正常</span><span class="lv lv2">L2 损失</span><div class="lvleg"><span class="seg l0" title="L0 平稳">L0</span><span class="seg l1" title="L1 轻度扰动">L1</span><span class="seg l2 on" title="L2 中度损失">L2</span><span class="seg l3" title="L3 重度损伤">L3</span></div><span class="dir up">↑ 上升</span></div>
+        </div>
+      </header>
+      <div class="shrow">
+        <div class="sh"><span class="sh-k">割胶受胁</span><span class="sh-bar"><i class="crit" style="width:100%"></i></span><span class="sh-v crit">100%</span></div>
+        <div class="sh"><span class="sh-k">树况受胁</span><span class="sh-bar"><i class="ok" style="width:0.0%"></i></span><span class="sh-v ok">0%</span></div>
+      </div>
+      <details><summary>明细：指标距平 · 点级得分 · 16 天预报</summary>
+        <div class="grp">树况产能 · 慢通道（30天滚动, 割胶分×割季系数 1.0）</div>
+        <table><thead><tr><th>指标</th><th>当前值</th><th>距平</th><th>状态</th><th>对产量</th></tr></thead>
+        <tbody><tr><td>日均温</td><td class="v">23.98 °C</td><td class="a">-0.08</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>夜温(最低温)</td><td class="v">21.38 °C</td><td class="a">+0.12</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>高温日≥35°C</td><td class="v">0.0 天</td><td class="a">-0.22</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>VPD(空气干燥度)</td><td class="v">0.33 kPa</td><td class="a">-0.15</td><td><span class="pill lo">偏低</span></td><td><span class="imp good" title="空气干燥抽水力强,蒸腾受压">利于产量</span></td></tr><tr><td>根区土壤湿度</td><td class="v">0.5 m³/m³</td><td class="a">+0.04</td><td><span class="pill hi">偏多</span></td><td><span class="imp good" title="根区缺水→排胶少,重死皮风险">利于产量</span></td></tr><tr><td>30天降雨</td><td class="v">437.41 mm</td><td class="a">+110.84</td><td><span class="pill hi">偏多</span></td><td><span class="imp good" title="水分亏缺数周后传导到产量(对树体)">利于产量</span></td></tr><tr><td>中雨天数≥10mm</td><td class="v">19.65 天</td><td class="a">+6.42</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title="中雨天多压缩割胶窗口+病害风险">减产压力(当期)</span></td></tr></tbody></table>
+        <div class="grp">割胶作业 · 快通道（30天滚动）</div>
+        <table><tbody><tr><td>清晨降雨日(03-09)</td><td class="v">21.55 天</td><td class="a">+5.21</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title="清晨雨=损失割胶日,当月即体现">减产压力(当期)</span></td></tr><tr><td>清晨雨量</td><td class="v">120.07 mm</td><td class="a">+37.95</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title="雨冲胶稀释杯胶,单日产出损失">减产压力(当期)</span></td></tr></tbody></table>
+        <div class="grp">点级得分（受胁线 ≥25）</div>
+        <table><thead><tr><th>监测点</th><th>割胶分</th><th>树况分</th><th>状态</th></tr></thead>
+        <tbody><tr><td>景洪</td><td class="v">90.0</td><td class="v">8.3</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>勐腊</td><td class="v">90.0</td><td class="v">0.0</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>普洱</td><td class="v">46.7</td><td class="v">0.0</td><td><span class="dot bad"></span>受胁</td></tr></tbody></table>
+        <div class='grp'>受胁点触发明细</div><ul class='det'><li><b>景洪</b> 割胶 90.0 / 树况 8.3<br><span class="sub">morning_rain_days3级重、morning_rain_mm2级中、tmin1级轻；morning_rain_streak=9(3级重)</span></li><li><b>勐腊</b> 割胶 90.0 / 树况 0.0<br><span class="sub">morning_rain_days3级重、morning_rain_mm2级中；morning_rain_streak=9(3级重)</span></li><li><b>普洱</b> 割胶 46.7 / 树况 0.0<br><span class="sub">morning_rain_days2级中；morning_rain_streak=5(2级中)</span></li></ul>
+        <div class="grp">未来 16 天预报 vs 常年（2026-07-31 ~ 2026-08-15）</div>
+        <div class="fcrow"><div class="fc"><div class="fc-k">清晨降雨日</div><div class="fc-v">12.2天</div><div class="fc-b">常年 10.46 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">累计雨量</div><div class="fc-v">208.86mm</div><div class="fc-b">常年 186.3 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">高温日</div><div class="fc-v">0.0天</div><div class="fc-b">常年 0.03 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">平均气温</div><div class="fc-v">23.84°C</div><div class="fc-b">常年 23.94 <span class="pill ok">正常</span></div></div></div>
+      </details>
+    </section>
+    <section class="card">
+      <header>
+        <div><h2>马来西亚 <span class="share">全球占比 ≈2.5%</span></h2>
+        <span class="sub">2 个监测点 · 产量加权 · 割季系数 1.0</span></div>
+        <div class="hd-right">
+          <div class="idxbox">
+            <div class="idx ok">25.7<span class="idx-u">指数</span></div>
+            <div class="scale"><div class="scale-bar"><i class="scale-mark" style="left:25.7%"></i></div><div class="scale-lbl"><span>0</span><span>100</span></div></div>
+          </div>
+          <div class="badges"><span class="badge warn">局部承压</span><span class="lv lv3">L3 损伤</span><div class="lvleg"><span class="seg l0" title="L0 平稳">L0</span><span class="seg l1" title="L1 轻度扰动">L1</span><span class="seg l2" title="L2 中度损失">L2</span><span class="seg l3 on" title="L3 重度损伤">L3</span></div><span class="dir flat">→ 持平</span></div>
+        </div>
+      </header>
+      <div class="shrow">
+        <div class="sh"><span class="sh-k">割胶受胁</span><span class="sh-bar"><i class="warn" style="width:45.0%"></i></span><span class="sh-v warn">45%</span></div>
+        <div class="sh"><span class="sh-k">树况受胁</span><span class="sh-bar"><i class="warn" style="width:45.0%"></i></span><span class="sh-v warn">45%</span></div>
+      </div>
+      <details><summary>明细：指标距平 · 点级得分 · 16 天预报</summary>
+        <div class="grp">树况产能 · 慢通道（30天滚动, 割胶分×割季系数 1.0）</div>
+        <table><thead><tr><th>指标</th><th>当前值</th><th>距平</th><th>状态</th><th>对产量</th></tr></thead>
+        <tbody><tr><td>日均温</td><td class="v">27.65 °C</td><td class="a">+0.51</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="日均温偏高抑制光合与乳胶再生">减产压力(潜在)</span></td></tr><tr><td>夜温(最低温)</td><td class="v">24.59 °C</td><td class="a">-0.06</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>高温日≥35°C</td><td class="v">0.0 天</td><td class="a">0.0</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>VPD(空气干燥度)</td><td class="v">0.66 kPa</td><td class="a">+0.11</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="空气干燥抽水力强,蒸腾受压">减产压力(潜在)</span></td></tr><tr><td>根区土壤湿度</td><td class="v">0.39 m³/m³</td><td class="a">-0.03</td><td><span class="pill lo">偏少</span></td><td><span class="imp bad" title="根区缺水→排胶少,重死皮风险">减产压力(潜在)</span></td></tr><tr><td>30天降雨</td><td class="v">211.53 mm</td><td class="a">+17.19</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>中雨天数≥10mm</td><td class="v">7.55 天</td><td class="a">+0.3</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr></tbody></table>
+        <div class="grp">割胶作业 · 快通道（30天滚动）</div>
+        <table><tbody><tr><td>清晨降雨日(03-09)</td><td class="v">10.75 天</td><td class="a">+0.89</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>清晨雨量</td><td class="v">37.22 mm</td><td class="a">+1.28</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr></tbody></table>
+        <div class="grp">点级得分（受胁线 ≥25）</div>
+        <table><thead><tr><th>监测点</th><th>割胶分</th><th>树况分</th><th>状态</th></tr></thead>
+        <tbody><tr><td>亚罗士打</td><td class="v">0.0</td><td class="v">7.8</td><td><span class="dot"></span>正常</td></tr><tr><td>哥打巴鲁</td><td class="v">56.7</td><td class="v">47.7</td><td><span class="dot bad"></span>受胁</td></tr></tbody></table>
+        <div class='grp'>受胁点触发明细</div><ul class='det'><li><b>哥打巴鲁</b> 割胶 56.7 / 树况 47.7 ⚡干热叠加<br><span class="sub">morning_rain_days2级中、morning_rain_mm1级轻、soil_moisture3级重、vpd2级中；morning_rain_streak=3(1级轻)；soil_deficit_days=30(3级重)</span></li></ul>
+        <div class="grp">未来 16 天预报 vs 常年（2026-07-31 ~ 2026-08-15）</div>
+        <div class="fcrow"><div class="fc"><div class="fc-k">清晨降雨日</div><div class="fc-v">7.6天</div><div class="fc-b">常年 5.78 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">累计雨量</div><div class="fc-v">104.0mm</div><div class="fc-b">常年 104.06 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">高温日</div><div class="fc-v">0.0天</div><div class="fc-b">常年 0.02 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">平均气温</div><div class="fc-v">27.04°C</div><div class="fc-b">常年 27.17 <span class="pill ok">正常</span></div></div></div>
+      </details>
+    </section>
+    <section class="card">
+      <header>
+        <div><h2>柬埔寨 <span class="share">全球占比 ≈2.5%</span></h2>
+        <span class="sub">2 个监测点 · 产量加权 · 割季系数 1.0</span></div>
+        <div class="hd-right">
+          <div class="idxbox">
+            <div class="idx warn">54.7<span class="idx-u">指数</span></div>
+            <div class="scale"><div class="scale-bar"><i class="scale-mark" style="left:54.7%"></i></div><div class="scale-lbl"><span>0</span><span>100</span></div></div>
+          </div>
+          <div class="badges"><span class="badge warn2">面状承压</span><span class="lv lv3">L3 损伤</span><div class="lvleg"><span class="seg l0" title="L0 平稳">L0</span><span class="seg l1" title="L1 轻度扰动">L1</span><span class="seg l2" title="L2 中度损失">L2</span><span class="seg l3 on" title="L3 重度损伤">L3</span></div><span class="dir up">↑ 上升</span></div>
+        </div>
+      </header>
+      <div class="shrow">
+        <div class="sh"><span class="sh-k">割胶受胁</span><span class="sh-bar"><i class="ok" style="width:0.0%"></i></span><span class="sh-v ok">0%</span></div>
+        <div class="sh"><span class="sh-k">树况受胁</span><span class="sh-bar"><i class="crit" style="width:100%"></i></span><span class="sh-v crit">100%</span></div>
+      </div>
+      <details><summary>明细：指标距平 · 点级得分 · 16 天预报</summary>
+        <div class="grp">树况产能 · 慢通道（30天滚动, 割胶分×割季系数 1.0）</div>
+        <table><thead><tr><th>指标</th><th>当前值</th><th>距平</th><th>状态</th><th>对产量</th></tr></thead>
+        <tbody><tr><td>日均温</td><td class="v">27.46 °C</td><td class="a">+0.82</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="日均温偏高抑制光合与乳胶再生">减产压力(潜在)</span></td></tr><tr><td>夜温(最低温)</td><td class="v">24.56 °C</td><td class="a">+0.34</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="夜温升高减产效应最显著(夜间呼吸消耗)">减产压力(潜在)</span></td></tr><tr><td>高温日≥35°C</td><td class="v">2.4 天</td><td class="a">+1.99</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title=">35°C诱导气孔关闭,热胁迫累积">减产压力(潜在)</span></td></tr><tr><td>VPD(空气干燥度)</td><td class="v">0.87 kPa</td><td class="a">+0.25</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="空气干燥抽水力强,蒸腾受压">减产压力(潜在)</span></td></tr><tr><td>根区土壤湿度</td><td class="v">0.26 m³/m³</td><td class="a">-0.11</td><td><span class="pill lo">偏少</span></td><td><span class="imp bad" title="根区缺水→排胶少,重死皮风险">减产压力(潜在)</span></td></tr><tr><td>30天降雨</td><td class="v">176.76 mm</td><td class="a">-46.51</td><td><span class="pill lo">偏少</span></td><td><span class="imp bad" title="水分亏缺数周后传导到产量(对树体)">减产压力(潜在)</span></td></tr><tr><td>中雨天数≥10mm</td><td class="v">6.6 天</td><td class="a">-1.27</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr></tbody></table>
+        <div class="grp">割胶作业 · 快通道（30天滚动）</div>
+        <table><tbody><tr><td>清晨降雨日(03-09)</td><td class="v">7.4 天</td><td class="a">+0.02</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>清晨雨量</td><td class="v">24.26 mm</td><td class="a">-1.78</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr></tbody></table>
+        <div class="grp">点级得分（受胁线 ≥25）</div>
+        <table><thead><tr><th>监测点</th><th>割胶分</th><th>树况分</th><th>状态</th></tr></thead>
+        <tbody><tr><td>磅湛</td><td class="v">23.3</td><td class="v">97.2</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>蒙多基里</td><td class="v">23.3</td><td class="v">43.1</td><td><span class="dot bad"></span>受胁</td></tr></tbody></table>
+        <div class='grp'>受胁点触发明细</div><ul class='det'><li><b>磅湛</b> 割胶 23.3 / 树况 97.2 ⚡干热叠加<br><span class="sub">hot_days3级重、morning_rain_days1级轻、rain2级中、soil_moisture3级重、tmin2级中、vpd3级重；morning_rain_streak=4(1级轻)；soil_deficit_days=30(3级重)</span></li><li><b>蒙多基里</b> 割胶 23.3 / 树况 43.1<br><span class="sub">morning_rain_days1级轻、soil_moisture3级重、vpd1级轻；morning_rain_streak=3(1级轻)；soil_deficit_days=30(3级重)</span></li></ul>
+        <div class="grp">未来 16 天预报 vs 常年（2026-07-31 ~ 2026-08-15）</div>
+        <div class="fcrow"><div class="fc"><div class="fc-k">清晨降雨日</div><div class="fc-v">6.0天</div><div class="fc-b">常年 3.85 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">累计雨量</div><div class="fc-v">117.32mm</div><div class="fc-b">常年 126.83 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">高温日</div><div class="fc-v">0.0天</div><div class="fc-b">常年 0.07 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">平均气温</div><div class="fc-v">26.71°C</div><div class="fc-b">常年 26.43 <span class="pill ok">正常</span></div></div></div>
+      </details>
+    </section>
+    <section class="card">
+      <header>
+        <div><h2>中国海南 <span class="share">全球占比 ≈2.5%</span></h2>
+        <span class="sub">3 个监测点 · 产量加权 · 割季系数 1.0</span></div>
+        <div class="hd-right">
+          <div class="idxbox">
+            <div class="idx ok">12.2<span class="idx-u">指数</span></div>
+            <div class="scale"><div class="scale-bar"><i class="scale-mark" style="left:12.2%"></i></div><div class="scale-lbl"><span>0</span><span>100</span></div></div>
+          </div>
+          <div class="badges"><span class="badge ok">基本正常</span><span class="lv lv0">L0 平稳</span><div class="lvleg"><span class="seg l0 on" title="L0 平稳">L0</span><span class="seg l1" title="L1 轻度扰动">L1</span><span class="seg l2" title="L2 中度损失">L2</span><span class="seg l3" title="L3 重度损伤">L3</span></div><span class="dir down">↓ 下降</span></div>
+        </div>
+      </header>
+      <div class="shrow">
+        <div class="sh"><span class="sh-k">割胶受胁</span><span class="sh-bar"><i class="ok" style="width:30.0%"></i></span><span class="sh-v ok">30%</span></div>
+        <div class="sh"><span class="sh-k">树况受胁</span><span class="sh-bar"><i class="ok" style="width:0.0%"></i></span><span class="sh-v ok">0%</span></div>
+      </div>
+      <details><summary>明细：指标距平 · 点级得分 · 16 天预报</summary>
+        <div class="grp">树况产能 · 慢通道（30天滚动, 割胶分×割季系数 1.0）</div>
+        <table><thead><tr><th>指标</th><th>当前值</th><th>距平</th><th>状态</th><th>对产量</th></tr></thead>
+        <tbody><tr><td>日均温</td><td class="v">27.78 °C</td><td class="a">-0.14</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>夜温(最低温)</td><td class="v">24.96 °C</td><td class="a">-0.15</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>高温日≥35°C</td><td class="v">2.6 天</td><td class="a">+0.56</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>VPD(空气干燥度)</td><td class="v">0.77 kPa</td><td class="a">-0.07</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>根区土壤湿度</td><td class="v">0.32 m³/m³</td><td class="a">-0.04</td><td><span class="pill lo">偏少</span></td><td><span class="imp bad" title="根区缺水→排胶少,重死皮风险">减产压力(潜在)</span></td></tr><tr><td>30天降雨</td><td class="v">207.5 mm</td><td class="a">+25.28</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>中雨天数≥10mm</td><td class="v">4.4 天</td><td class="a">-0.82</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr></tbody></table>
+        <div class="grp">割胶作业 · 快通道（30天滚动）</div>
+        <table><tbody><tr><td>清晨降雨日(03-09)</td><td class="v">5.6 天</td><td class="a">+1.44</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title="清晨雨=损失割胶日,当月即体现">减产压力(当期)</span></td></tr><tr><td>清晨雨量</td><td class="v">34.42 mm</td><td class="a">+7.55</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr></tbody></table>
+        <div class="grp">点级得分（受胁线 ≥25）</div>
+        <table><thead><tr><th>监测点</th><th>割胶分</th><th>树况分</th><th>状态</th></tr></thead>
+        <tbody><tr><td>儋州</td><td class="v">0.0</td><td class="v">10.0</td><td><span class="dot"></span>正常</td></tr><tr><td>琼中</td><td class="v">33.3</td><td class="v">5.0</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>琼海</td><td class="v">23.3</td><td class="v">20.0</td><td><span class="dot"></span>正常</td></tr></tbody></table>
+        <div class='grp'>受胁点触发明细</div><ul class='det'><li><b>琼中</b> 割胶 33.3 / 树况 5.0<br><span class="sub">hot_days1级轻、morning_rain_days1级轻、morning_rain_mm1级轻；morning_rain_streak=4(1级轻)</span></li></ul>
+        <div class="grp">未来 16 天预报 vs 常年（2026-07-31 ~ 2026-08-15）</div>
+        <div class="fcrow"><div class="fc"><div class="fc-k">清晨降雨日</div><div class="fc-v">4.9天</div><div class="fc-b">常年 1.91 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">累计雨量</div><div class="fc-v">176.11mm</div><div class="fc-b">常年 137.85 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">高温日</div><div class="fc-v">1.2天</div><div class="fc-b">常年 0.24 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">平均气温</div><div class="fc-v">27.13°C</div><div class="fc-b">常年 27.35 <span class="pill ok">正常</span></div></div></div>
+      </details>
+    </section>
+    <section class="card">
+      <header>
+        <div><h2>缅甸 <span class="share">全球占比 ≈1.5%</span></h2>
+        <span class="sub">2 个监测点 · 产量加权 · 割季系数 1.0</span></div>
+        <div class="hd-right">
+          <div class="idxbox">
+            <div class="idx ok">37.7<span class="idx-u">指数</span></div>
+            <div class="scale"><div class="scale-bar"><i class="scale-mark" style="left:37.7%"></i></div><div class="scale-lbl"><span>0</span><span>100</span></div></div>
+          </div>
+          <div class="badges"><span class="badge ok">基本正常</span><span class="lv lv2">L2 损失</span><div class="lvleg"><span class="seg l0" title="L0 平稳">L0</span><span class="seg l1" title="L1 轻度扰动">L1</span><span class="seg l2 on" title="L2 中度损失">L2</span><span class="seg l3" title="L3 重度损伤">L3</span></div><span class="dir down">↓ 下降</span></div>
+        </div>
+      </header>
+      <div class="shrow">
+        <div class="sh"><span class="sh-k">割胶受胁</span><span class="sh-bar"><i class="crit" style="width:100%"></i></span><span class="sh-v crit">100%</span></div>
+        <div class="sh"><span class="sh-k">树况受胁</span><span class="sh-bar"><i class="ok" style="width:30.0%"></i></span><span class="sh-v ok">30%</span></div>
+      </div>
+      <details><summary>明细：指标距平 · 点级得分 · 16 天预报</summary>
+        <div class="grp">树况产能 · 慢通道（30天滚动, 割胶分×割季系数 1.0）</div>
+        <table><thead><tr><th>指标</th><th>当前值</th><th>距平</th><th>状态</th><th>对产量</th></tr></thead>
+        <tbody><tr><td>日均温</td><td class="v">25.83 °C</td><td class="a">+0.28</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="日均温偏高抑制光合与乳胶再生">减产压力(潜在)</span></td></tr><tr><td>夜温(最低温)</td><td class="v">23.96 °C</td><td class="a">-0.24</td><td><span class="pill lo">偏低</span></td><td><span class="imp good" title="夜温升高减产效应最显著(夜间呼吸消耗)">利于产量</span></td></tr><tr><td>高温日≥35°C</td><td class="v">0.0 天</td><td class="a">0.0</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>VPD(空气干燥度)</td><td class="v">0.3 kPa</td><td class="a">+0.02</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>根区土壤湿度</td><td class="v">0.36 m³/m³</td><td class="a">+0.01</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>30天降雨</td><td class="v">832.93 mm</td><td class="a">+85.21</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>中雨天数≥10mm</td><td class="v">25.3 天</td><td class="a">+1.03</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr></tbody></table>
+        <div class="grp">割胶作业 · 快通道（30天滚动）</div>
+        <table><tbody><tr><td>清晨降雨日(03-09)</td><td class="v">29.1 天</td><td class="a">+2.25</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title="清晨雨=损失割胶日,当月即体现">减产压力(当期)</span></td></tr><tr><td>清晨雨量</td><td class="v">198.36 mm</td><td class="a">-25.15</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr></tbody></table>
+        <div class="grp">点级得分（受胁线 ≥25）</div>
+        <table><thead><tr><th>监测点</th><th>割胶分</th><th>树况分</th><th>状态</th></tr></thead>
+        <tbody><tr><td>毛淡棉</td><td class="v">70.0</td><td class="v">0.0</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>土瓦</td><td class="v">70.0</td><td class="v">53.9</td><td><span class="dot bad"></span>受胁</td></tr></tbody></table>
+        <div class='grp'>受胁点触发明细</div><ul class='det'><li><b>毛淡棉</b> 割胶 70.0 / 树况 0.0<br><span class="sub">morning_rain_days3级重；morning_rain_streak=30(3级重)</span></li><li><b>土瓦</b> 割胶 70.0 / 树况 53.9 ⚡干热叠加<br><span class="sub">morning_rain_days3级重、soil_moisture2级中、tmin1级轻、vpd2级中；morning_rain_streak=18(3级重)</span></li></ul>
+        <div class="grp">未来 16 天预报 vs 常年（2026-07-31 ~ 2026-08-15）</div>
+        <div class="fcrow"><div class="fc"><div class="fc-k">清晨降雨日</div><div class="fc-v">15.7天</div><div class="fc-b">常年 15.05 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">累计雨量</div><div class="fc-v">534.06mm</div><div class="fc-b">常年 462.7 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">高温日</div><div class="fc-v">0.0天</div><div class="fc-b">常年 0.0 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">平均气温</div><div class="fc-v">25.59°C</div><div class="fc-b">常年 25.29 <span class="pill hi">偏高</span></div></div></div>
+      </details>
+    </section>
+    <section class="card">
+      <header>
+        <div><h2>老挝 <span class="share">全球占比 ≈1.0%</span></h2>
+        <span class="sub">2 个监测点 · 产量加权 · 割季系数 1.0</span></div>
+        <div class="hd-right">
+          <div class="idxbox">
+            <div class="idx ok">33.2<span class="idx-u">指数</span></div>
+            <div class="scale"><div class="scale-bar"><i class="scale-mark" style="left:33.2%"></i></div><div class="scale-lbl"><span>0</span><span>100</span></div></div>
+          </div>
+          <div class="badges"><span class="badge ok">基本正常</span><span class="lv lv2">L2 损失</span><div class="lvleg"><span class="seg l0" title="L0 平稳">L0</span><span class="seg l1" title="L1 轻度扰动">L1</span><span class="seg l2 on" title="L2 中度损失">L2</span><span class="seg l3" title="L3 重度损伤">L3</span></div><span class="dir up">↑ 上升</span></div>
+        </div>
+      </header>
+      <div class="shrow">
+        <div class="sh"><span class="sh-k">割胶受胁</span><span class="sh-bar"><i class="crit" style="width:100%"></i></span><span class="sh-v crit">100%</span></div>
+        <div class="sh"><span class="sh-k">树况受胁</span><span class="sh-bar"><i class="ok" style="width:0.0%"></i></span><span class="sh-v ok">0%</span></div>
+      </div>
+      <details><summary>明细：指标距平 · 点级得分 · 16 天预报</summary>
+        <div class="grp">树况产能 · 慢通道（30天滚动, 割胶分×割季系数 1.0）</div>
+        <table><thead><tr><th>指标</th><th>当前值</th><th>距平</th><th>状态</th><th>对产量</th></tr></thead>
+        <tbody><tr><td>日均温</td><td class="v">26.12 °C</td><td class="a">+0.19</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>夜温(最低温)</td><td class="v">23.81 °C</td><td class="a">+0.43</td><td><span class="pill hi">偏高</span></td><td><span class="imp bad" title="夜温升高减产效应最显著(夜间呼吸消耗)">减产压力(潜在)</span></td></tr><tr><td>高温日≥35°C</td><td class="v">0.0 天</td><td class="a">-0.16</td><td><span class="pill ok">正常</span></td><td><span class="imp neutral">基本无害</span></td></tr><tr><td>VPD(空气干燥度)</td><td class="v">0.46 kPa</td><td class="a">-0.12</td><td><span class="pill lo">偏低</span></td><td><span class="imp good" title="空气干燥抽水力强,蒸腾受压">利于产量</span></td></tr><tr><td>根区土壤湿度</td><td class="v">0.47 m³/m³</td><td class="a">+0.05</td><td><span class="pill hi">偏多</span></td><td><span class="imp good" title="根区缺水→排胶少,重死皮风险">利于产量</span></td></tr><tr><td>30天降雨</td><td class="v">502.25 mm</td><td class="a">+149.91</td><td><span class="pill hi">偏多</span></td><td><span class="imp good" title="水分亏缺数周后传导到产量(对树体)">利于产量</span></td></tr><tr><td>中雨天数≥10mm</td><td class="v">19.5 天</td><td class="a">+6.58</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title="中雨天多压缩割胶窗口+病害风险">减产压力(当期)</span></td></tr></tbody></table>
+        <div class="grp">割胶作业 · 快通道（30天滚动）</div>
+        <table><tbody><tr><td>清晨降雨日(03-09)</td><td class="v">22.0 天</td><td class="a">+5.27</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title="清晨雨=损失割胶日,当月即体现">减产压力(当期)</span></td></tr><tr><td>清晨雨量</td><td class="v">120.95 mm</td><td class="a">+36.1</td><td><span class="pill hi">偏多</span></td><td><span class="imp bad" title="雨冲胶稀释杯胶,单日产出损失">减产压力(当期)</span></td></tr></tbody></table>
+        <div class="grp">点级得分（受胁线 ≥25）</div>
+        <table><thead><tr><th>监测点</th><th>割胶分</th><th>树况分</th><th>状态</th></tr></thead>
+        <tbody><tr><td>琅南塔</td><td class="v">56.7</td><td class="v">0.0</td><td><span class="dot bad"></span>受胁</td></tr><tr><td>巴色</td><td class="v">80.0</td><td class="v">19.6</td><td><span class="dot bad"></span>受胁</td></tr></tbody></table>
+        <div class='grp'>受胁点触发明细</div><ul class='det'><li><b>琅南塔</b> 割胶 56.7 / 树况 0.0<br><span class="sub">morning_rain_days2级中、morning_rain_mm1级轻；morning_rain_streak=7(2级中)</span></li><li><b>巴色</b> 割胶 80.0 / 树况 19.6<br><span class="sub">morning_rain_days3级重、morning_rain_mm1级轻、tmin2级中；morning_rain_streak=15(3级重)</span></li></ul>
+        <div class="grp">未来 16 天预报 vs 常年（2026-07-31 ~ 2026-08-15）</div>
+        <div class="fcrow"><div class="fc"><div class="fc-k">清晨降雨日</div><div class="fc-v">14.0天</div><div class="fc-b">常年 10.41 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">累计雨量</div><div class="fc-v">327.65mm</div><div class="fc-b">常年 224.75 <span class="pill hi">偏多</span></div></div><div class="fc"><div class="fc-k">高温日</div><div class="fc-v">0.0天</div><div class="fc-b">常年 0.0 <span class="pill ok">正常</span></div></div><div class="fc"><div class="fc-k">平均气温</div><div class="fc-v">25.69°C</div><div class="fc-b">常年 25.61 <span class="pill ok">正常</span></div></div></div>
+      </details>
+    </section></div>
+
+<div class="vzone">
+  <span class="vz-title">预期差与验证节点（待接入 · 锚点 2026-07-31）</span>
+  <div class="vrow"><div class="vnode"><div class="vn-k">ANRPC 月报</div>
+      <div class="vn-d">2026-08-01 <em>1 天后</em></div>
+      <div class="vn-desc">官方产量预估对照</div></div><div class="vnode"><div class="vn-k">中国海关进口数据</div>
+      <div class="vn-d">2026-08-07 <em>7 天后</em></div>
+      <div class="vn-desc">进口量验证</div></div><div class="vnode"><div class="vn-k">上期所库存</div>
+      <div class="vn-d">2026-08-07 <em>7 天后</em></div>
+      <div class="vn-desc">每周五库存周报</div></div></div>
+</div>
+
+<details class="howto"><summary>指数计算逻辑（大白话说明 · 点击展开）</summary>
+<p><b>一句话：</b>先在每个监测点上用"它自己的历史同期"判断天气坏不坏，再按产量权重加总——不让大产区的好天气掩盖小产区的坏天气（先判后权）。</p>
+<p><b>1. 分级（0–3 级）：</b>每个点、每个指标，与自身 2005 年（小时类 2015 年）以来的同期比较：向有害方向偏离不到 0.5 个标准差算 0 级（无害），≥0.5σ 轻度(1级)、≥1σ 中度(2级)、≥2σ 重度(3级)。往好的方向偏不算分。</p>
+<p><b>2. 两层分数：</b>割胶层管<b>当期产量</b>（清晨雨日权重 0.7 + 清晨雨量 0.3）——清晨下雨当天就没法割；树况层管<b>潜在产能</b>（土壤湿度 0.30、夜温 0.25、空气干燥度 0.20、高温 0.15、雨量 0.10）——树受伤了几个季度都缓不过来。每层各算 0–100 分。</p>
+<p><b>3. 累积效应：</b>连续清晨雨、土壤连续亏缺天数、35℃ 以上的热量积累，比单日波动更伤——这些累积特征单独分级，并把对应指标的级别往上抬。</p>
+<p><b>4. 干热叠加：</b>空气干燥(VPD)和土壤缺水同时达到中度以上时，树况分额外 +10%——又干又热不是简单的 1+1。</p>
+<p><b>5. 割季门控：</b>越冬停割期（如云南 12–2 月）清晨雨再多也不构成当期损失，割胶分乘以逐月割季系数（停割期≈0）。树况分不乘——树在冬天照样会受伤。</p>
+<p><b>6. 汇总与三个核心数：</b>产区内按点的产量权重、全球按产区产量份额加权。每个产区/全球看三个数：<b>割胶受胁占比</b>（多少产量当期割不动）、<b>树况受胁占比</b>（多少产量树况受损）、<b>胁迫指数</b>（0.4×割胶分+0.6×树况分，综合深度）。受胁线 = 分数 ≥25（约达 1 级）。</p>
+<p><b>7. 格局标签：</b>深度(指数)×广度(树况占比)四象限：指数高但只有少数点受损=点状冲击；指数中等但普遍承压=面状承压；又高又广=广泛受损；双低=基本正常；其余=局部承压。<b>层级</b>：L1 扰动(只有割胶受扰) → L2 损失(割胶持续受胁或树况达轻度) → L3 损伤(土壤亏缺/热积累等累积特征达中度以上，威胁跨季产能)。</p>
+<p><b>8. 方向：</b>与上一个 30 天窗口用同一套方法重算比较，变化超过 5 分记上升/下降，否则持平。</p>
+<p class="sub">所有阈值与权重集中在 impact_config.json，标注"待校准"的参数为保守初值，将在阶段 3 用历史产量数据校准。</p>
+</details>
+
+<div class="foot">措辞约定：产量影响一律使用中性供需语言，不用多空类交易词汇。当期影响=减产压力(当期)，潜在影响=减产压力(潜在)，有利方向=利于产量，无显著偏离=基本无害；指数高位=供应偏紧、低位=偏松。红=较常年偏多/偏高，蓝=偏少/偏低，绿=正常（|距平|&gt;0.5σ）。全球占比/点权重均为 ANRPC 口径占位先验值，待分省产量校准。本页为样式预览，正式版将做成 Widget 每日自动刷新。</div>
+</div></body></html>
