@@ -577,7 +577,7 @@ font-size:12px;line-height:1.7;color:var(--sub);word-break:break-word}
     function lg(color,txt,dash){legend+='<line x1="'+lx+'" y1="40" x2="'+(lx+15)+'" y2="40" stroke="'+color+'" stroke-width="2.4"'+(dash?' stroke-dasharray="5,4"':'')+'/>'+
       '<text x="'+(lx+19)+'" y="43.5" font-size="10.5" fill="#4e5969">'+txt+'</text>';lx+=19+txt.length*11.5+10;}
     var hasBand=M.pmin&&M.pmax&&M.pmin.some(function(v){return v!==null;})&&M.pmax.some(function(v){return v!==null;});
-    if(hasBand){lg('#a9aeb8','历史极值带(去毛刺)',false);}
+    if(hasBand){lg('#a9aeb8','历史极值',false);}
     if(M.hi&&M.hi.year)lg('#2ca02c',M.hi.year+' '+(meta.hi_label||''),false);
     if(M.lo&&M.lo.year)lg('#8c4a1e',M.lo.year+' '+(meta.lo_label||''),true);
     lg('#165dff','2025 去年',false);lg('#f53f3f','2026 今年',false);
