@@ -566,7 +566,6 @@ font-size:12px;line-height:1.7;color:var(--sub);word-break:break-word}
       for(var i=0;i<pmax.length;i++){var v=pmax[i];
         if(v===null||v===undefined)continue;
         d+=(first?'M':'L')+X(weeks[i]).toFixed(1)+','+Y(v).toFixed(1);first=false;}
-      first=true;
       for(var i=pmin.length-1;i>=0;i--){var v=pmin[i];
         if(v===null||v===undefined)continue;
         d+=(first?'M':'L')+X(weeks[i]).toFixed(1)+','+Y(v).toFixed(1);first=false;}
