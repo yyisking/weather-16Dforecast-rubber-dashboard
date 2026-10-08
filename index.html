@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="天然橡胶全球产区 P1 候选天气胁迫指数看板（研究预览）">
-<title>天然橡胶 P1 天气胁迫看板</title>
+<meta name="description" content="天然橡胶 v1.0 天气胁迫看板（研究预览）">
+<title>天然橡胶 v1.0 天气胁迫看板</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111b32'/%3E%3Cpath d='M32 12c9 7 14 13 14 21a14 14 0 1 1-28 0c0-8 5-14 14-21Z' fill='%23a8e6cf'/%3E%3C/svg%3E">
 <style>
 :root{--ink:#0b1220;--muted:#64748b;--line:#dce4ee;--paper:#f4f7fb;--card:#fff;--navy:#111b32;--blue:#2762d6;--green:#15825d;--amber:#d88312;--red:#cf455c;--shadow:0 18px 48px rgba(15,23,42,.08)}
@@ -150,14 +150,14 @@ function breadthTag(v){if(v===null||v===undefined)return '<span class="breadth">
 let selectedRegion=ORDER[0]||null;
 let selectedWeatherPoint=null;
 let filter='all';
-/* ---------- SVG: P1 分数季节图 ---------- */
+/* ---------- SVG: 当前指数季节图 ---------- */
 function scoreChartSVG(code,metric='headline'){
   const e=HISTORY.entities_data?.[code]?.[metric]||null;
   if(!e)return '';
   const name=code==='GLOBAL_OFFICIAL_WEIGHTED'?'总分（十区官方产量加权）':(REG[code]?REG[code].region_name:(CAND.point_dynamic_short_trace||[]).find(p=>p.point_id===code)?.point_id||code);
   const W=940,H=380,pL=54,pR=20,pT=66,pB=46;
   const X=mf=>pL+(mf/12)*(W-pL-pR), Y=v=>pT+(1-v/100)*(H-pT-pB);
-  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(name)} P1 分数季节图">`;
+  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(name)} 当前指数季节图">`;
   [40,70].forEach(t=>{s+=`<line x1="${pL}" y1="${Y(t)}" x2="${W-pR}" y2="${Y(t)}" stroke="#cbd5e1" stroke-dasharray="4,4"/><text x="${W-pR+2}" y="${Y(t)+3}" font-size="9" fill="#94a3b8">${t}</text>`});
   const band=(e.band||[]).filter(b=>Number.isFinite(b.day_of_year)&&Number.isFinite(b.min)&&Number.isFinite(b.max)&&b.count>0).sort((a,b)=>a.week_index-b.week_index);
   const bandRuns=[];let run=[];band.forEach(b=>{if(run.length&&b.week_index!==run[run.length-1].week_index+1){bandRuns.push(run);run=[]}run.push(b)});if(run.length)bandRuns.push(run);
@@ -238,8 +238,8 @@ function heroHTML(){
   const winTxt=Object.entries(winCount).map(([k,n])=>`${CHAN_LABEL[k].slice(0,2)} ${n}区`).join(' · ');
   const w=g.dynamic_p1||{};
   return `<section class="hero rubber-score-hero" data-candidate="${esc(CAND.candidate)}" data-generation="${esc(CAND.generation_id)}" data-anchor="${esc(CAND.current_anchor)}" data-global-score="${String(v)}">
-    <div class="rubber-hero-heading"><span class="eyebrow">天然橡胶 · 动态 P1 研究候选</span><h2>全球产区天气胁迫指数</h2><p>官方产量权重情景：${esc(w.scenario_id||'trailing_3_year_average')} · ${esc(w.reference_years||'')} · ${g.coverage_region_count} 个区域</p></div>
-    <div class="rubber-hero-score"><button class="rubber-score-value" data-scorechart="GLOBAL_OFFICIAL_WEIGHTED" aria-label="查看全球 P1 季节图"><strong>${fmt(v,2)}</strong><span>/ 100</span></button><div class="score-position" aria-label="0 到 100 连续分数位置"><i style="width:${Math.max(0,Math.min(100,v))}%"></i><span style="left:${Math.max(0,Math.min(100,v))}%"></span></div><div class="score-position-caption"><span>0</span><em>${bandWord[c]}（展示分段）</em><span>100</span></div><div class="rubber-score-actions"><button class="linkbtn" data-scorechart="GLOBAL_OFFICIAL_WEIGHTED">查看季节图</button></div><div class="research-flags"><span>research only</span><span>not calibrated</span><span>not validated</span><span>not production</span><span>not loss percent</span></div><p class="hero-note">0–100 practical weather-stress index；不是损失率、产量预测或交易信号。来源为 forecast 与 mixed_reanalysis_forecast，不是纯站点实况。</p></div>
+    <div class="rubber-hero-heading"><span class="eyebrow">天然橡胶 · v1.0 研究候选</span><h2>全球产区 v1.0 总体指数</h2><p>官方产量权重情景：${esc(w.scenario_id||'trailing_3_year_average')} · ${esc(w.reference_years||'')} · ${g.coverage_region_count} 个区域</p></div>
+    <div class="rubber-hero-score"><button class="rubber-score-value" data-scorechart="GLOBAL_OFFICIAL_WEIGHTED" aria-label="查看全球当前指数季节图"><strong>${fmt(v,2)}</strong><span>/ 100</span></button><div class="score-position" aria-label="0 到 100 连续分数位置"><i style="width:${Math.max(0,Math.min(100,v))}%"></i><span style="left:${Math.max(0,Math.min(100,v))}%"></span></div><div class="score-position-caption"><span>0</span><em>${bandWord[c]}（展示分段）</em><span>100</span></div><div class="rubber-score-actions"><button class="linkbtn" data-scorechart="GLOBAL_OFFICIAL_WEIGHTED">查看季节图</button></div><div class="research-flags"><span>research only</span><span>not calibrated</span><span>not validated</span><span>not production</span><span>not loss percent</span></div><p class="hero-note">0–100 practical weather-stress index；不是损失率、产量预测或交易信号。来源为 forecast 与 mixed_reanalysis_forecast，不是纯站点实况。</p></div>
     <div class="hero-side"><div class="hero-stat"><span>完整共同数据锚点</span><b>${esc(CAND.current_anchor)}</b><small>最新可形成完整小时覆盖的共同日</small></div><div class="hero-stat"><span>有效覆盖</span><b>${g.coverage_region_count} / 10 区 · ${pts} 点</b><small>全球参考生产覆盖 ${(100*(w.world_coverage_share||0)).toFixed(1)}%</small></div><div class="hero-stat"><span>获胜通道分布</span><b>${esc(winTxt)}</b><small>按区域三通道 headline 选择</small></div><div class="hero-stat"><span>权重口径</span><b>官方产量加权</b><small>${esc(w.scenario_id||'trailing_3_year_average')} · ${esc(w.reference_years||'')}</small></div></div>
     <details class="rubber-hero-details"><summary>评分口径与研究限制</summary><p>短期机会使用当地全天逐小时闭区间 10–25°C practical candidate gate，只对门内同小时降水调整；central 7/14 日为同因子嵌套窗口，取较高分。候选使用共同完整日锚点。分值未校准、未验证、非生产，不代表减损或产量变化。</p></details>
   </section>`;
@@ -247,7 +247,7 @@ function heroHTML(){
 function regionCard(r){
   const v=r.p1_headline,c=bc(v);
   const peak=r.p1_localized_peak, breadth=breadthOf(r.region_code);
-  return `<article class="region-card${selectedRegion===r.region_code?' selected':''}" data-region="${r.region_code}"><div class="card-head"><button class="region-pick" data-select-region="${r.region_code}"><span><h3>${esc(r.region_name)}</h3><span class="asof">${r.region_code} · ${r.point_count} 个监测点</span></span></button><span class="bandtag ${c}">${bandWord[c]}</span></div><button class="score chartable ${c}" data-scorechart="${r.region_code}" aria-label="查看${esc(r.region_name)}P1 季节图">${fmt(v,1)} <small>/ 100</small></button><div class="meter"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></div><div class="channel-win">获胜通道：${esc(CHAN_LABEL[r.p1_winning_channel]||r.p1_winning_channel||'—')}</div><div class="card-foot"><span>局部峰值 <b>${fmt(peak,1)}</b></span>${breadthTag(breadth)}</div><div class="card-foot"><button class="control" data-select-region="${r.region_code}">查看通道与天气详情</button><button class="control" data-scorechart="${r.region_code}">季节图 →</button></div></article>`;
+  return `<article class="region-card${selectedRegion===r.region_code?' selected':''}" data-region="${r.region_code}"><div class="card-head"><button class="region-pick" data-select-region="${r.region_code}"><span><h3>${esc(r.region_name)}</h3><span class="asof">${r.region_code} · ${r.point_count} 个监测点</span></span></button><span class="bandtag ${c}">${bandWord[c]}</span></div><button class="score chartable ${c}" data-scorechart="${r.region_code}" aria-label="查看${esc(r.region_name)}当前指数季节图">${fmt(v,1)} <small>/ 100</small></button><div class="meter"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></div><div class="channel-win">获胜通道：${esc(CHAN_LABEL[r.p1_winning_channel]||r.p1_winning_channel||'—')}</div><div class="card-foot"><span>局部峰值 <b>${fmt(peak,1)}</b></span>${breadthTag(breadth)}</div><div class="card-foot"><button class="control" data-select-region="${r.region_code}">查看通道与天气详情</button><button class="control" data-scorechart="${r.region_code}">季节图 →</button></div></article>`;
 }
 function regionDetailHTML(){
   const r=REG[selectedRegion];if(!r)return '';
@@ -275,28 +275,28 @@ function regionDetailHTML(){
     </div>
   </details>`;
   const metricExplanations=`<details class="explanation-details metric-explanations"><summary>天气因子单项指标说明</summary><div class="explanation-body"><dl><div><dt>日均温</dt><dd>当前 30 日每日平均气温的均值，表示整体热量背景。</dd></div><div><dt>夜温（最低温）</dt><dd>当前 30 日每日最低温的均值，表示低温/夜间背景；不是实际割胶时刻温度。</dd></div><div><dt>高温日 ≥35℃</dt><dd>当前 30 日每日最高温达到 35℃及以上的天数，仅表示极端高温背景，不是统一割胶阈值。</dd></div><div><dt>VPD（空气干燥度）</dt><dd>当前 30 日平均蒸汽压亏缺；数值越高通常表示空气越干、蒸散需求越强。</dd></div><div><dt>根区土壤湿度</dt><dd>0–7、7–28、28–100 cm 三层按厚度加权的体积含水量代理。卡片显示截至窗口末日最近有效日值，越高通常越湿。季节图沿用 seasonal sidecar 的 30 日口径，勿视为与卡片完全同口径。</dd></div><div><dt>降水量</dt><dd>当前 30 日累计降水；是天气背景量，不代表损失。</dd></div><div><dt>中雨天数 ≥10mm</dt><dd>当前 30 日单日降水达到 10mm 及以上的天数；不等同于割胶损失日。</dd></div></dl><p class="metric-method-note">距平 = 当前值减历史同期均值；基线 = 历史同期均值 ± 标准差。标记只描述相对历史同期偏离，不表示损失率或因果。</p></div></details>`;
-  return `<section class="section" id="region-detail"><div class="section-head"><div><h2>${esc(r.region_name)} · 当前区域详情</h2><p>候选锚点 ${esc(CAND.current_anchor)} · 区域 headline 为三通道监测点中位数最大值</p></div></div><div class="detail-grid"><div class="panel"><h3>三通道 P1 分数</h3><p class="panel-sub">星号标记该区 headline 获胜通道；分数可悬停预览或点按放大季节图</p><div class="factor-list">${chans}</div>${channelExplanations}<h3 style="margin-top:18px">监测点分数</h3><div class="point-score-list">${pointScores}</div><h3 style="margin-top:22px">天气观测摘要</h3><p class="panel-sub">来自现有 indicators 侧车；仅作上下文，不由前端推分</p>${weatherSelect}<div class="metric-grid">${metrics}</div><p class="chart-hint">指标与候选各自保留原始日期窗口；缺失保持为空，不插值。根区土壤湿度卡片为窗口末日前最近有效日值，季节图沿用现有 30 日均值口径，二者并非完全同口径。</p>${metricExplanations}</div><div class="panel"><h3>区域解释与覆盖</h3><p class="panel-sub">P1 practical weather-stress candidate · 0–100</p><div class="facts"><div class="fact"><span>区域 headline</span><b>${fmt(r.p1_headline,2)} / 100</b><small>三通道中位数的最大值</small></div><div class="fact"><span>获胜通道</span><b>${esc(CHAN_LABEL[r.p1_winning_channel]||'—')}</b><small>本区最高的通道中位数</small></div><div class="fact"><span>局部峰值</span><b>${fmt(peak,2)} / 100</b><small>点级通道最大值；独立展示</small></div><div class="fact"><span>覆盖广度</span><b>${breadth===null?'—':fmt(breadth*100,0)+'%'}</b><small>获胜通道点分 ≥50 的点占比</small></div><div class="fact"><span>完整锚点</span><b>${esc(CAND.current_anchor)}</b><small>${r.point_count} 个点</small></div><div class="fact"><span>短期 7/14</span><b>nested max</b><small>同因子窗口，不是两套指标</small></div></div><div class="risk-box">来源保留 forecast / mixed_reanalysis_forecast 标签；并非纯实况。${esc(sourceText||'来源小时构成未提供')}。该区域指数未校准、未验证、非生产，不是损失率或产量预测。</div></div></div></section>`;
+  return `<section class="section" id="region-detail"><div class="section-head"><div><h2>${esc(r.region_name)} · 当前区域详情</h2><p>当前数据锚点 ${esc(CAND.current_anchor)} · 区域 headline 为三通道监测点中位数最大值</p></div></div><div class="detail-grid"><div class="panel"><h3>三通道天气风险分数</h3><p class="panel-sub">星号标记该区 headline 获胜通道；分数可悬停预览或点按放大季节图</p><div class="factor-list">${chans}</div>${channelExplanations}<h3 style="margin-top:18px">监测点分数</h3><div class="point-score-list">${pointScores}</div><h3 style="margin-top:22px">天气观测摘要</h3><p class="panel-sub">来自现有 indicators 侧车；仅作上下文，不由前端推分</p>${weatherSelect}<div class="metric-grid">${metrics}</div><p class="chart-hint">指标与候选各自保留原始日期窗口；缺失保持为空，不插值。根区土壤湿度卡片为窗口末日前最近有效日值，季节图沿用现有 30 日均值口径，二者并非完全同口径。</p>${metricExplanations}</div><div class="panel"><h3>区域解释与覆盖</h3><p class="panel-sub">当前天气胁迫候选 · 0–100</p><div class="facts"><div class="fact"><span>区域总体指数</span><b>${fmt(r.p1_headline,2)} / 100</b><small>三通道中位数的最大值</small></div><div class="fact"><span>获胜通道</span><b>${esc(CHAN_LABEL[r.p1_winning_channel]||'—')}</b><small>本区最高的通道中位数</small></div><div class="fact"><span>局部峰值</span><b>${fmt(peak,2)} / 100</b><small>点级通道最大值；独立展示</small></div><div class="fact"><span>覆盖广度</span><b>${breadth===null?'—':fmt(breadth*100,0)+'%'}</b><small>获胜通道点分 ≥50 的点占比</small></div><div class="fact"><span>完整锚点</span><b>${esc(CAND.current_anchor)}</b><small>${r.point_count} 个点</small></div><div class="fact"><span>短期 7/14</span><b>nested max</b><small>同因子窗口，不是两套指标</small></div></div><div class="risk-box">来源保留 forecast / mixed_reanalysis_forecast 标签；并非纯实况。${esc(sourceText||'来源小时构成未提供')}。该区域指数未校准、未验证、非生产，不是损失率或产量预测。</div></div></div></section>`;
 }
 function p0HTML(){
   const g=CAND.global_official_weighted;
   const rows=ORDER.map(c=>{const r=REG[c];return `<tr><td>${esc(r.region_name)}</td><td>${fmt(r.p1_headline,1)}</td><td>${fmt(r.p0_headline,1)}</td><td>${signed(r.delta,1)}</td></tr>`}).join('');
   const w=P0.official_production_weighted_shadow||{};
   const shadowRows=ORDER.map(c=>{const r=(P0.regions||[]).find(x=>x.region_code===c);if(!r)return '';return `<tr><td>${esc(r.region_name)}</td><td>${fmt(r.weather_stress_index_0_100,1)}</td><td>${esc(CHAN_LABEL[r.winning_channel]||r.winning_channel||'—')}</td></tr>`}).join('');
-  return `<details class="p0"><summary>查看 P0 对照（默认关闭 · 仅供技术对照，P0 是旧算法评分，非主视图内容）</summary><div class="p0-body">
-    <p>以下为同候选快照（${CAND.current_anchor}）下的 P0 旧算法对照值与差值 P1−P0，以及独立运行锚点的 live P0 shadow。P0 不属于现行 P1 候选，不构成第二套主分数。</p>
-    <div class="p0-table"><table><tr><th>产区</th><th>P1 headline</th><th>P0 headline（同快照）</th><th>P1−P0</th></tr>${rows}<tr><td>总分（官方产量加权）</td><td>${fmt(g.p1_headline,1)}</td><td>${fmt(g.p0_headline,1)}</td><td>${signed(g.delta,1)}</td></tr></table></div>
-    <h4 style="margin:16px 0 6px;color:var(--ink)">live P0 shadow（独立运行，锚点 ${P0.anchor_date||'—'}，与上方 daily-current 候选非同一快照）</h4>
+  return `<details class="p0"><summary>当前版本 / 旧版算法（P0）对照（默认关闭 · 仅供技术参考）</summary><div class="p0-body">
+    <p>以下为同一数据锚点（${CAND.current_anchor}）下的当前版本与旧版算法（P0）分数及差值“当前版本−旧版”；下方为独立运行锚点的旧版算法（P0）shadow。该区域仅作技术对照。</p>
+    <div class="p0-table"><table><tr><th>产区</th><th>当前版本</th><th>旧版算法（P0，同一快照）</th><th>当前版本−旧版</th></tr>${rows}<tr><td>总分（官方产量加权）</td><td>${fmt(g.p1_headline,1)}</td><td>${fmt(g.p0_headline,1)}</td><td>${signed(g.delta,1)}</td></tr></table></div>
+    <h4 style="margin:16px 0 6px;color:var(--ink)">旧版算法（P0）shadow（独立运行，锚点 ${P0.anchor_date||'—'}，与上方候选非同一快照）</h4>
     <p>加权 shadow 分 ${fmt(w.weather_stress_index_0_100,1)} · 覆盖 ${w.covered_region_count||'—'} 区 · 状态 ${esc(w.status||P0.status||'')}</p>
-    <div class="p0-table"><table><tr><th>产区</th><th>P0 shadow 分</th><th>获胜通道</th></tr>${shadowRows}</table></div>
+    <div class="p0-table"><table><tr><th>产区</th><th>旧版 shadow 分（P0）</th><th>获胜通道</th></tr>${shadowRows}</table></div>
   </div></details>`;
 }
 function render(){
   const app=document.getElementById('app');
   if(!ORDER.length||!selectedRegion||!REG[selectedRegion]){app.innerHTML='<div class="error"><h2>数据暂时无法载入</h2><p>后端没有提供可用的产区列表，当前页面已安全停止渲染。</p></div>';return}
   const indEnd=IND.current_window?IND.current_window.end:'—';
-  app.innerHTML=`<header class="topbar"><div class="brand"><span class="mark"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 12c9 7 14 13 14 21a14 14 0 1 1-28 0c0-8 5-14 14-21Z" fill="#a8e6cf"/></svg></span><div><h1>天然橡胶 P1 天气胁迫看板</h1><p>研究预览 · 候选 ${esc(CAND.candidate)} · 锚点 ${CAND.current_anchor}</p></div></div><span class="fresh">指标生成 ${esc(IND.generated_at||'').slice(0,16).replace('T',' ')}</span></header>
+  app.innerHTML=`<header class="topbar"><div class="brand"><span class="mark"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 12c9 7 14 13 14 21a14 14 0 1 1-28 0c0-8 5-14 14-21Z" fill="#a8e6cf"/></svg></span><div><h1>天然橡胶 v1.0 天气胁迫看板</h1><p>研究预览 · 当前天气胁迫候选 · 锚点 ${CAND.current_anchor}</p></div></div><span class="fresh">指标生成 ${esc(IND.generated_at||'').slice(0,16).replace('T',' ')}</span></header>
   ${heroHTML()}
-  <section class="section"><div class="section-head"><div class="toolbar" style="flex:1"><div><h2>十个产区 P1 候选分</h2><p style="margin:4px 0 0;color:var(--muted);font-size:.9rem">地区顺序与全部分数由后端透传。区域 headline = 三通道监测点中位数最大值；局部峰值独立，breadth 为获胜通道点分 ≥50 的覆盖比例。</p></div><div class="controls">
+  <section class="section"><div class="section-head"><div class="toolbar" style="flex:1"><div><h2>十个产区当前天气胁迫分</h2><p style="margin:4px 0 0;color:var(--muted);font-size:.9rem">地区顺序与全部分数由后端透传。区域 headline = 三通道监测点中位数最大值；局部峰值独立，breadth 为获胜通道点分 ≥50 的覆盖比例。</p></div><div class="controls">
     <button class="control${filter==='all'?' active':''}" data-filter="all">全部</button>
     <button class="control${filter==='r'?' active':''}" data-filter="r">70–100 红</button>
     <button class="control${filter==='o'?' active':''}" data-filter="o">40–69 橙</button>
@@ -307,7 +307,7 @@ function render(){
   ${regionDetailHTML()}
   ${p0HTML()}
   <section class="section"><div class="panel"><h3>历史季节图口径</h3><p class="panel-sub">${esc(HISTORY.chart_footnote||'季节图为 retrospective ex-post research diagnostic；non-PIT、non-backtest。灰带为 2005–2024 周度经验 min–max，蓝线为 2025 周度值，红线只在纯再分析输入形成完整锚点时显示。Gap/null 保持断线，不插值或补零。')}</p></div></section>
-  <div class="footer">天然橡胶 P1 候选天气胁迫指数 · research only · not calibrated · not validated · not production<br>不是损失率、产量预测或交易信号 · 数据来源：daily-current candidate / dashboard compatibility sidecar / indicators / seasonal_charts（本地侧车，离线渲染）</div>`;
+  <div class="footer">天然橡胶 v1.0 天气胁迫指数 · research only · not calibrated · not validated · not production<br>不是损失率、产量预测或交易信号 · 数据来源：daily-current candidate / dashboard compatibility sidecar / indicators / seasonal_charts（本地侧车，离线渲染）</div>`;
   bind();
 }
 let hoverTimer=null,hoverEl=null;
@@ -316,7 +316,7 @@ function showHover(trigger,title,svg){if(!svg)return;clearTimeout(hoverTimer);if
 function bind(){
   document.querySelectorAll('[data-filter]').forEach(el=>el.addEventListener('click',()=>{filter=el.dataset.filter;render()}));
   document.querySelectorAll('[data-scorechart]').forEach(el=>{
-    const code=el.dataset.scorechart,metric=el.dataset.series||'headline',name=code==='GLOBAL_OFFICIAL_WEIGHTED'?'总分（十区官方产量加权）':(REG[code]?.region_name||code),metricName=metric==='headline'?'P1 headline':CHAN_LABEL[metric]||metric;
+    const code=el.dataset.scorechart,metric=el.dataset.series||'headline',name=code==='GLOBAL_OFFICIAL_WEIGHTED'?'总分（十区官方产量加权）':(REG[code]?.region_name||code),metricName=metric==='headline'?'当前指数':CHAN_LABEL[metric]||metric;
     const chart=()=>scoreChartSVG(code,metric);
     el.addEventListener('click',()=>{hideHover();openChart(`${name} · ${metricName} 季节图`,`周度历史同期 · 2005–2024 极值范围 · 2025 / 2026`,chart(),el)});
     el.addEventListener('mouseenter',()=>showHover(el,`${name} · ${metricName}`,chart()));
