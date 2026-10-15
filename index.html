@@ -166,14 +166,18 @@ function scoreChartSVG(code,metric='headline'){
   let pen=false;
   y25.forEach(p=>{if(p.v===null){pen=false;return}s+=pen?`<line x1="${pen.x}" y1="${pen.y}" x2="${p.x}" y2="${Y(p.v)}" stroke="#2563eb" stroke-width="1.8"/>`:'';pen={x:p.x,y:Y(p.v)}});
   y25.forEach(p=>{if(p.v!==null)s+=`<circle cx="${p.x}" cy="${Y(p.v)}" r="2.6" fill="#2563eb"/>`});
-  let d26='',on=false,lastWeek=null;const dots=[];
-  (e.y2026||[]).forEach(o=>{if(o.score===null||!o.date){on=false;lastWeek=null;return}const x=X((o.day_of_year-1)/365*12),y=Y(o.score);if(lastWeek&&o.week_index===lastWeek+1){d26+=`L${x.toFixed(1)},${y.toFixed(1)}`}else{d26+=(d26?' ':'')+`M${x.toFixed(1)},${y.toFixed(1)}`}dots.push([x,y]);lastWeek=o.week_index;on=true});
+  let d26='',on=false,lastWeek=null;const dots=[];let lastWeeklyPoint=null;
+  (e.y2026||[]).forEach(o=>{if(o.score===null||o.score===undefined||!Number.isFinite(Number(o.score))||!o.date){on=false;lastWeek=null;return}const x=X((o.day_of_year-1)/365*12),y=Y(o.score);if(lastWeek&&o.week_index===lastWeek+1){d26+=`L${x.toFixed(1)},${y.toFixed(1)}`}else{d26+=(d26?' ':'')+`M${x.toFixed(1)},${y.toFixed(1)}`}dots.push([x,y]);if(!lastWeeklyPoint||o.date>lastWeeklyPoint.date)lastWeeklyPoint={date:o.date,score:Number(o.score),x,y};lastWeek=o.week_index;on=true});
   if(d26)s+=`<path d="${d26}" fill="none" stroke="#dc3d55" stroke-width="2.2"/>`;
   dots.forEach(([x,y])=>s+=`<circle cx="${x}" cy="${y}" r="3.2" fill="#dc3d55" stroke="#fff" stroke-width="1"/>`);
   const legacy=SEASON.entities_data?.[code];let mk=metric==='headline'?legacy?.current_marker:null;
   if(!mk&&metric!=='headline'&&REG[code]){const region=CAND.regions.find(r=>r.region_code===code);const value=region?.p1_channel_details?.[metric]?.median;mk={date:CAND.current_anchor,score:Number.isFinite(value)?value:null}}
   if(!mk&&!REG[code]){const trace=(CAND.point_dynamic_short_trace||[]).find(p=>p.point_id===code);if(trace){let value=trace.dynamic_short_score;if(metric!=='headline'){const region=CAND.regions.find(r=>r.region_code===trace.region);value=region?.p1_channel_details?.[metric]?.point_values?.[code]??null}else{value=CAND.point_headlines?.[code]??null}mk={date:CAND.current_anchor,score:value}}}
-  if(mk&&mk.score!==null){const dd=mk.date.split('-');const x=X((+dd[1]-1)+(+dd[2]-1)/dim(2026,+dd[1])),y=Y(mk.score);
+  if(mk&&mk.score!==null){const mkDate=new Date(`${mk.date}T00:00:00Z`),mkScore=Number(mk.score),mkDoy=(mkDate-Date.UTC(2026,0,1))/86400000+1,x=X((mkDoy-1)/365*12),y=Y(mkScore);
+    const spanDays=lastWeeklyPoint?(mkDate-new Date(`${lastWeeklyPoint.date}T00:00:00Z`))/86400000:null;
+    if(lastWeeklyPoint&&Number.isFinite(mkDate.getTime())&&Number.isFinite(lastWeeklyPoint.score)&&lastWeeklyPoint.score>=0&&lastWeeklyPoint.score<=100&&Number.isFinite(mkScore)&&mkScore>=0&&mkScore<=100&&mk.date>lastWeeklyPoint.date&&spanDays>0&&spanDays<=14){
+      s+=`<line class="score-cross-source-guide" data-start-date="${esc(lastWeeklyPoint.date)}" data-end-date="${esc(mk.date)}" x1="${lastWeeklyPoint.x.toFixed(1)}" y1="${lastWeeklyPoint.y.toFixed(1)}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#dc3d55" stroke-width="1.4" stroke-dasharray="3,4" stroke-opacity=".9"/>`;
+    }
     s+=`<line x1="${x}" y1="${pT}" x2="${x}" y2="${H-pB}" stroke="#111b32" stroke-dasharray="3,4" stroke-opacity=".45"/><path d="M${x},${y-7} L${x+7},${y} L${x},${y+7} L${x-7},${y} Z" fill="#111b32" stroke="#fff" stroke-width="1.6"/><text x="${Math.min(x,W-pR-120)}" y="${y-12}" font-size="11.5" font-weight="700" fill="#111b32">当前 ${fmt(mk.score,1)} · ${mk.date}</text>`}
   s+=`<line x1="${pL}" y1="${pT}" x2="${pL}" y2="${H-pB}" stroke="#cbd5e1"/><line x1="${pL}" y1="${H-pB}" x2="${W-pR}" y2="${H-pB}" stroke="#cbd5e1"/>`;
   for(let m=1;m<=12;m++){const x=X(m-0.5);s+=`<text x="${x}" y="${H-pB+16}" font-size="10" fill="#64748b" text-anchor="middle">${m}月</text>`}
@@ -181,7 +185,7 @@ function scoreChartSVG(code,metric='headline'){
   if(e.extremes)s+=`<text x="${pL}" y="16" font-size="10.5" fill="#64748b">历史可用极值：最低 ${fmt(e.extremes.min,1)} · 最高 ${fmt(e.extremes.max,1)}</text>`;
   let lx=pL;const lg=(color,label,dash)=>{s+=`<line x1="${lx}" y1="34" x2="${lx+16}" y2="34" stroke="${color}" stroke-width="2.4"${dash?' stroke-dasharray="5,4"':''}/><text x="${lx+20}" y="37.5" font-size="10.5" fill="#475569">${label}</text>`;lx+=26+label.length*11.5};
   const hc=HISTORY;
-  if(bandRuns.length)lg('#94a3b8','2005–2024 历史 min–max 经验范围');lg('#2563eb','2025 周度');lg('#dc3d55','2026 再分析周度');if(mk&&mk.score!==null)lg('#111b32','当前候选 marker（独立来源）',true);
+  if(bandRuns.length)lg('#94a3b8','2005–2024 历史 min–max 经验范围');lg('#2563eb','2025 周度');lg('#dc3d55','2026 再分析周度');if(mk&&mk.score!==null){lg('#dc3d55','跨源引导线（非观测/重算）',true);lg('#111b32','当前候选 marker（独立来源）',true)}
   s+=`<text x="${pL}" y="${H-6}" font-size="9.8" fill="#94a3b8">${esc(hc.chart_footnote||'历史序列按真实 gap/null 断开；灰带为经验极值范围，不是置信区间。')}</text>`;
   return s+'</svg>';
 }
@@ -202,10 +206,14 @@ function wxChartSVG(region,wxKey,pointId=null){
   const bd=band();if(bd)s+=`<path d="${bd}" fill="#94a3b8" fill-opacity=".26"/>`;
   const line=(a,color,wdt)=>{let d='',on=false;(a||[]).forEach((v,i)=>{if(v===null||!Number.isFinite(v)){on=false;return}d+=(on?'L':'M')+X(i).toFixed(1)+','+Y(v).toFixed(1);on=true});return d?`<path d="${d}" fill="none" stroke="${color}" stroke-width="${wdt}"/>`:''};
   s+=line(m.y2025,'#2563eb',1.8)+line(m.y2026,'#dc3d55',2.4);
+  let weatherGuide=false;
   if(m.cur&&Number.isFinite(m.cur.value)){
     const cd=m.cur.date.split('-');const doy=(parseD(m.cur.date)-parseD(cd[0]+'-01-01'))/86400000+1;
     let bi=0,bd9=1e9;(WX.weeks||[]).forEach((wk,i)=>{const df=Math.abs(wk-doy);if(df<bd9){bd9=df;bi=i}});
-    const x=X(bi),y=Y(m.cur.value);
+    const weekly=(m.y2026||[]).map((value,i)=>({value,index:i})).filter(o=>o.value!==null&&Number.isFinite(o.value)).at(-1),weekDoy=weekly?(WX.weeks||[])[weekly.index]:null,spanDays=weekDoy===null?null:doy-weekDoy;
+    const fraction=(doy-(WX.weeks||[])[0])/7,markerIndex=Math.max(0,Math.min(n-1,fraction)),x=pL+(markerIndex/(n-1))*(W-pL-pR),y=Y(m.cur.value);
+    weatherGuide=!!weekly&&Number.isFinite(weekDoy)&&Number.isFinite(doy)&&doy>=weekDoy&&spanDays<=14&&spanDays>=0&&m.cur.date.startsWith('2026-');
+    if(weatherGuide){const weeklyX=X(weekly.index),weeklyY=Y(weekly.value);s+=`<line class="weather-cross-period-guide" data-start-doy="${weekDoy}" data-end-date="${esc(m.cur.date)}" x1="${weeklyX.toFixed(1)}" y1="${weeklyY.toFixed(1)}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#111b32" stroke-width="1.4" stroke-dasharray="3,4" stroke-opacity=".85"/>`}
     s+=`<circle cx="${x}" cy="${y}" r="5" fill="#111b32" stroke="#fff" stroke-width="1.8"/><text x="${Math.min(x+9,W-pR-150)}" y="${y-9}" font-size="11" font-weight="700" fill="#111b32">当前 ${fmt(m.cur.value,2)}${esc(meta.unit||'')} · ${m.cur.date}</text>`;
   }
   s+=`<line x1="${pL}" y1="${pT}" x2="${pL}" y2="${H-pB}" stroke="#cbd5e1"/><line x1="${pL}" y1="${H-pB}" x2="${W-pR}" y2="${H-pB}" stroke="#cbd5e1"/>`;
@@ -213,10 +221,10 @@ function wxChartSVG(region,wxKey,pointId=null){
   mdoy.forEach((dy,i)=>{let bi=0,bd9=1e9;(WX.weeks||[]).forEach((wk,j)=>{const df=Math.abs(wk-dy);if(df<bd9){bd9=df;bi=j}});const x=X(bi);s+=`<text x="${x}" y="${H-pB+15}" font-size="10" fill="#64748b" text-anchor="middle">${i+1}月</text>`});
   s+=`<text x="8" y="${Y(hi)+3}" font-size="10" fill="#64748b">${fmt(hi,1)}</text><text x="8" y="${Y(lo)+3}" font-size="10" fill="#64748b">${fmt(lo,1)}</text>`;
   let lx=pL;const lg=(color,label)=>{s+=`<line x1="${lx}" y1="30" x2="${lx+16}" y2="30" stroke="${color}" stroke-width="2.4"/><text x="${lx+20}" y="33.5" font-size="10.5" fill="#475569">${label}</text>`;lx+=26+label.length*11.5};
-  if(bd)lg('#94a3b8','历史同期最小—最大带');lg('#2563eb','2025');lg('#dc3d55','2026');lg('#111b32','当前值');
+  if(bd)lg('#94a3b8','历史同期最小—最大带');lg('#2563eb','2025');lg('#dc3d55','2026');lg('#111b32','当前值');if(weatherGuide){s+=`<line x1="${pL}" y1="47" x2="${pL+18}" y2="47" stroke="#111b32" stroke-width="1.4" stroke-dasharray="3,4"/><text x="${pL+23}" y="50.5" font-size="10.5" fill="#475569">周均线→最新日值视觉引导（非缺口观测/插值；来源可能混合）</text>`}
   let ext='';if(m.hmax&&m.hmin)ext=`历史极端：最高 ${fmt(m.hmax.value,2)}（${m.hmax.date}） · 最低 ${fmt(m.hmin.value,2)}（${m.hmin.date}）`;
   s+=`<text x="${pL}" y="14" font-size="10.5" fill="#64748b">${esc(ext)}</text>`;
-  s+=`<text x="${pL}" y="${H-5}" font-size="9.8" fill="#94a3b8">${esc(meta.name||wxKey)}（${esc(meta.unit||'')} · ${esc(meta.win||'')}）· 灰带为历史同期经验范围，非置信区间；当前点日期与候选锚点、指标窗口末日各自独立。</text>`;
+  s+=`<text x="${pL}" y="${H-5}" font-size="9.8" fill="#94a3b8">${esc(meta.name||wxKey)}（${esc(meta.unit||'')} · ${esc(meta.win||'')}）· 灰带为历史同期经验范围，非置信区间；当前点日期与候选锚点、指标窗口末日各自独立。虚线仅作周均值至最新日值视觉引导，不代表缺口观测或插值，来源可能混合。</text>`;
   return s+'</svg>';
 }
 /* ---------- 弹窗 / 悬浮图 ---------- */
@@ -306,7 +314,7 @@ function render(){
   <p class="chart-hint">局部峰值 = 该区全部监测点、全部变换后通道单点分最大值，独立展示，不进入区域总分。覆盖广度 = 点级总分 ≥50 的监测点占比；局部 &lt;40%、面状 40–&lt;75%、广泛 ≥75% 仅为展示型范围标签，不是科学阈值、损失等级或模型置信度；全球广度未提供。</p></section>
   ${regionDetailHTML()}
   ${p0HTML()}
-  <section class="section"><div class="panel"><h3>历史季节图口径</h3><p class="panel-sub">${esc(HISTORY.chart_footnote||'季节图为 retrospective ex-post research diagnostic；non-PIT、non-backtest。灰带为 2005–2024 周度经验 min–max，蓝线为 2025 周度值，红线只在纯再分析输入形成完整锚点时显示。Gap/null 保持断线，不插值或补零。')}</p></div></section>
+  <section class="section"><div class="panel"><h3>历史季节图口径</h3><p class="panel-sub">${esc(HISTORY.chart_footnote||'季节图为 retrospective ex-post research diagnostic；non-PIT、non-backtest。灰带为 2005–2024 周度经验 min–max，蓝线为 2025 周度值，红线只在纯再分析输入形成完整锚点时显示。Gap/null 保持断线，不插值或补零。')} 当前候选点与最后周度点之间的虚线仅作跨来源视觉引导，不代表缺口期间观测或周度重算；缺点或跨度超过 14 天时不连接。</p></div></section>
   <div class="footer">天然橡胶 v1.0 天气胁迫指数 · research only · not calibrated · not validated · not production<br>不是损失率、产量预测或交易信号 · 数据来源：daily-current candidate / dashboard compatibility sidecar / indicators / seasonal_charts（本地侧车，离线渲染）</div>`;
   bind();
 }
